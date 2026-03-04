@@ -3,10 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>CRASH PRO - ULTIMATE UI</title>
-    <!-- Socket.io Client SDK -->
+    <title>CRASH PRO</title>
     <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
-    <!-- Telegram Web App SDK -->
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
         :root {
@@ -15,447 +13,62 @@
             --success: #00ff88;
             --danger: #ff3366;
             --bg-dark: #060912;
-            --card-bg: rgba(16, 20, 35, 0.95);
+            --card-bg: rgba(16,20,35,0.95);
             --text-muted: #8a8f9e;
         }
-
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
-        }
-
-        body {
-            background-color: var(--bg-dark);
-            background-image: 
-                radial-gradient(circle at 50% 50%, rgba(112, 0, 255, 0.1) 0%, transparent 50%),
-                radial-gradient(circle at 10% 10%, rgba(0, 242, 255, 0.05) 0%, transparent 30%);
-            color: white;
-            display: flex;
-            justify-content: center;
-            min-height: 100vh;
-            overflow-x: hidden;
-        }
-
-        .app-shell {
-            width: 100%;
-            max-width: 480px;
-            padding: 15px;
-            display: flex;
-            flex-direction: column;
-            gap: 15px;
-        }
-
-        /* --- HEADER SECTION --- */
-        .header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 10px 0;
-        }
-
-        .user-stats {
-            display: flex;
-            flex-direction: column;
-            gap: 5px;
-        }
-
-        .user-badge {
-            background: linear-gradient(90deg, var(--secondary), transparent);
-            padding: 4px 12px;
-            border-radius: 4px;
-            font-size: 0.85rem;
-            font-weight: bold;
-            border-left: 3px solid var(--primary);
-            color: #fff;
-        }
-
-        .balance-display {
-            font-size: 1.5rem;
-            font-weight: 800;
-            color: var(--primary);
-            text-shadow: 0 0 10px rgba(0, 242, 255, 0.5);
-        }
-
-        .balance-display small {
-            font-size: 0.75rem;
-            color: var(--text-muted);
-        }
-
-        .nav-btns {
-            display: flex;
-            gap: 8px;
-        }
-
-        .action-sm {
-            padding: 8px 12px;
-            border-radius: 8px;
-            border: 1px solid rgba(255,255,255,0.1);
-            background: rgba(255,255,255,0.05);
-            color: white;
-            font-size: 0.8rem;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.2s;
-        }
-
-        .action-sm.deposit { 
-            border-color: var(--success); 
-            color: var(--success); 
-        }
-        .action-sm.deposit:hover {
-            background: rgba(0,255,136,0.1);
-        }
-        .action-sm.withdraw { 
-            border-color: #ff9900; 
-            color: #ff9900; 
-        }
-        .action-sm.withdraw:hover {
-            background: rgba(255,153,0,0.1);
-        }
-
-        /* --- MULTIPLIER SECTION with countdown inside --- */
-        .main-display {
-            background: var(--card-bg);
-            height: 200px;
-            border-radius: 24px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            position: relative;
-            border: 1px solid rgba(255,255,255,0.05);
-            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
-            overflow: hidden;
-            margin: 10px 0;
-        }
-
-        .multiplier-container {
-            position: relative;
-            width: 100%;
-            height: 100%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-
-        .multiplier-val {
-            font-size: 5.5rem;
-            font-weight: 900;
-            background: linear-gradient(to bottom, #fff, #999);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            filter: drop-shadow(0 0 20px rgba(0,242,255,0.5));
-            letter-spacing: -2px;
-            transition: all 0.2s;
-            z-index: 2;
-        }
-
-        .countdown-inside {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            background: rgba(0,0,0,0.3);
-            backdrop-filter: blur(2px);
-            z-index: 10;
-            border-radius: 24px;
-            pointer-events: none; /* Allow clicking through to buttons */
-        }
-
-        .countdown-circle {
-            width: 120px;
-            height: 120px;
-            border-radius: 50%;
-            background: rgba(0,242,255,0.15);
-            border: 3px solid var(--primary);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            box-shadow: 0 0 30px var(--primary);
-            animation: glow 1s ease-in-out infinite alternate;
-        }
-
-        .countdown-number {
-            font-size: 4rem;
-            font-weight: 900;
-            color: white;
-            text-shadow: 0 0 20px var(--primary);
-        }
-
-        .countdown-text {
-            font-size: 1.5rem;
-            color: white;
-            margin-left: 15px;
-            font-weight: 600;
-            text-transform: uppercase;
-            letter-spacing: 2px;
-        }
-
-        @keyframes glow {
-            from { box-shadow: 0 0 20px var(--primary); }
-            to { box-shadow: 0 0 40px var(--primary); }
-        }
-
-        /* --- BETTING CONTROLS --- */
-        .control-panel {
-            background: var(--card-bg);
-            padding: 20px;
-            border-radius: 24px;
-            display: flex;
-            flex-direction: column;
-            gap: 15px;
-            border: 1px solid rgba(255,255,255,0.05);
-        }
-
-        .amount-input {
-            width: 100%;
-            background: #0b0e17;
-            border: 1px solid #2a2f3f;
-            border-radius: 12px;
-            padding: 15px;
-            color: white;
-            font-size: 1.3rem;
-            font-weight: bold;
-            text-align: center;
-            outline: none;
-            transition: border 0.2s;
-        }
-
-        .amount-input:focus {
-            border-color: var(--primary);
-        }
-
-        .quick-grid {
-            display: grid;
-            grid-template-columns: repeat(4, 1fr);
-            gap: 8px;
-        }
-
-        .q-chip {
-            background: #1e2333;
-            padding: 12px 5px;
-            border-radius: 8px;
-            font-size: 0.9rem;
-            text-align: center;
-            cursor: pointer;
-            border: 1px solid transparent;
-            font-weight: 600;
-            color: #ccc;
-            transition: all 0.2s;
-        }
-
-        .q-chip:hover { 
-            border-color: var(--primary); 
-            color: white;
-            background: #2a3042;
-        }
-        .q-chip.disabled { 
-            opacity: 0.4; 
-            pointer-events: none; 
-        }
-
-        .main-actions {
-            display: flex;
-            gap: 12px;
-        }
-
-        .btn-play {
-            flex: 1;
-            padding: 18px;
-            border-radius: 15px;
-            border: none;
-            font-size: 1.4rem;
-            font-weight: 900;
-            cursor: pointer;
-            transition: transform 0.1s, opacity 0.2s;
-            text-transform: uppercase;
-            letter-spacing: 2px;
-        }
-
-        .btn-play:disabled {
-            opacity: 0.5;
-            cursor: not-allowed;
-            transform: none;
-        }
-
-        .btn-start { 
-            background: var(--success); 
-            color: #003311; 
-            box-shadow: 0 4px 20px rgba(0,255,136,0.4); 
-        }
-        
-        .btn-stop { 
-            background: var(--danger); 
-            color: #fff; 
-            box-shadow: 0 4px 20px rgba(255,51,102,0.4); 
-        }
-        
-        .btn-play:active:not(:disabled) { transform: scale(0.95); }
-
-        /* --- HISTORY TABLE --- */
-        .history-card {
-            background: var(--card-bg);
-            border-radius: 24px;
-            padding: 18px;
-            flex-grow: 1;
-            border: 1px solid rgba(255,255,255,0.05);
-        }
-
-        .table-header {
-            display: grid;
-            grid-template-columns: 2fr 1fr 1fr;
-            padding-bottom: 12px;
-            border-bottom: 1px solid #2a2f3f;
-            font-size: 0.8rem;
-            color: var(--text-muted);
-            text-transform: uppercase;
-            font-weight: bold;
-        }
-
-        .history-list {
-            margin-top: 10px;
-            display: flex;
-            flex-direction: column;
-            max-height: 200px;
-            overflow-y: auto;
-        }
-
-        .history-item {
-            display: grid;
-            grid-template-columns: 2fr 1fr 1fr;
-            font-size: 0.9rem;
-            padding: 10px 0;
-            border-bottom: 1px solid rgba(255,255,255,0.03);
-            font-weight: 500;
-        }
-
-        .val-win { color: var(--success); font-weight: bold; }
-        .val-loss { color: var(--danger); font-weight: bold; }
-        .bot-username { color: #ff9900; font-style: italic; }
-
-        /* --- MODAL --- */
-        .modal {
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: rgba(0, 0, 0, 0.9);
-            display: none;
-            justify-content: center;
-            align-items: center;
-            z-index: 2000;
-            backdrop-filter: blur(10px);
-        }
-
-        .modal-content {
-            background: var(--card-bg);
-            width: 90%;
-            max-width: 400px;
-            border-radius: 28px;
-            padding: 30px 25px;
-            border: 1px solid var(--primary);
-            box-shadow: 0 0 40px rgba(0,242,255,0.3);
-        }
-
-        .modal-title {
-            font-size: 1.8rem;
-            font-weight: 800;
-            color: var(--primary);
-            margin-bottom: 20px;
-            text-align: center;
-        }
-
-        .bank-info {
-            background: #0b0e17;
-            border: 1px solid #2a2f3f;
-            border-radius: 16px;
-            padding: 15px;
-            margin-bottom: 20px;
-            text-align: center;
-        }
-
-        .bank-info p {
-            margin: 5px 0;
-            font-size: 1rem;
-        }
-
-        .bank-info .phone {
-            color: var(--primary);
-            font-size: 1.3rem;
-            font-weight: 700;
-            letter-spacing: 1px;
-        }
-
-        .bank-info .name {
-            color: #ff9900;
-            font-weight: 500;
-        }
-
-        .modal-input {
-            width: 100%;
-            padding: 15px;
-            margin-bottom: 15px;
-            background: #0b0e17;
-            border: 1px solid #2a2f3f;
-            border-radius: 14px;
-            color: white;
-            font-size: 1rem;
-            outline: none;
-            transition: border 0.2s;
-        }
-
-        .modal-input:focus {
-            border-color: var(--primary);
-        }
-
-        .modal-buttons {
-            display: flex;
-            gap: 12px;
-            margin-top: 20px;
-        }
-
-        .modal-btn {
-            flex: 1;
-            padding: 16px;
-            border: none;
-            border-radius: 14px;
-            font-size: 1rem;
-            font-weight: 700;
-            cursor: pointer;
-            transition: all 0.2s;
-        }
-
-        .modal-btn.submit {
-            background: var(--primary);
-            color: #000;
-        }
-
-        .modal-btn.cancel {
-            background: #2a2f3f;
-            color: white;
-        }
-
-        .modal-btn:hover {
-            transform: translateY(-2px);
-            filter: brightness(1.1);
-        }
-
-        .modal-btn:active {
-            transform: translateY(0);
-        }
-
-        .minimum-note {
-            font-size: 0.8rem;
-            color: var(--text-muted);
-            text-align: center;
-            margin-top: 10px;
-        }
+        * { margin:0; padding:0; box-sizing:border-box; font-family: 'Inter', sans-serif; }
+        body { background: var(--bg-dark); color: white; display: flex; justify-content: center; min-height: 100vh; }
+        .app-shell { width:100%; max-width:480px; padding:15px; display:flex; flex-direction:column; gap:15px; }
+        .header { display:flex; justify-content:space-between; align-items:center; padding:10px 0; }
+        .user-stats { display:flex; flex-direction:column; gap:5px; }
+        .user-badge { background:linear-gradient(90deg,var(--secondary),transparent); padding:4px 12px; border-radius:4px; font-size:0.85rem; font-weight:bold; border-left:3px solid var(--primary); }
+        .balance-display { font-size:1.5rem; font-weight:800; color:var(--primary); text-shadow:0 0 10px rgba(0,242,255,0.5); }
+        .balance-display small { font-size:0.75rem; color:var(--text-muted); }
+        .nav-btns { display:flex; gap:8px; }
+        .action-sm { padding:8px 12px; border-radius:8px; border:1px solid rgba(255,255,255,0.1); background:rgba(255,255,255,0.05); color:white; font-size:0.8rem; font-weight:600; cursor:pointer; transition:0.2s; }
+        .action-sm.deposit { border-color:var(--success); color:var(--success); }
+        .action-sm.withdraw { border-color:#ff9900; color:#ff9900; }
+        .main-display { background:var(--card-bg); height:200px; border-radius:24px; display:flex; align-items:center; justify-content:center; position:relative; border:1px solid rgba(255,255,255,0.05); box-shadow:0 10px 30px rgba(0,0,0,0.5); overflow:hidden; margin:10px 0; }
+        .multiplier-container { position:relative; width:100%; height:100%; display:flex; align-items:center; justify-content:center; }
+        .multiplier-val { font-size:5.5rem; font-weight:900; background:linear-gradient(to bottom,#fff,#999); -webkit-background-clip:text; -webkit-text-fill-color:transparent; filter:drop-shadow(0 0 20px rgba(0,242,255,0.5)); letter-spacing:-2px; z-index:2; }
+        .countdown-inside { position:absolute; top:0; left:0; width:100%; height:100%; display:flex; align-items:center; justify-content:center; background:rgba(0,0,0,0.3); backdrop-filter:blur(2px); z-index:10; border-radius:24px; pointer-events:none; }
+        .countdown-circle { width:120px; height:120px; border-radius:50%; background:rgba(0,242,255,0.15); border:3px solid var(--primary); display:flex; align-items:center; justify-content:center; box-shadow:0 0 30px var(--primary); animation:glow 1s infinite alternate; }
+        .countdown-number { font-size:4rem; font-weight:900; color:white; text-shadow:0 0 20px var(--primary); }
+        .countdown-text { font-size:1.5rem; color:white; margin-left:15px; font-weight:600; text-transform:uppercase; letter-spacing:2px; }
+        @keyframes glow { from { box-shadow:0 0 20px var(--primary); } to { box-shadow:0 0 40px var(--primary); } }
+        .control-panel { background:var(--card-bg); padding:20px; border-radius:24px; display:flex; flex-direction:column; gap:15px; border:1px solid rgba(255,255,255,0.05); }
+        .amount-input { width:100%; background:#0b0e17; border:1px solid #2a2f3f; border-radius:12px; padding:15px; color:white; font-size:1.3rem; font-weight:bold; text-align:center; outline:none; }
+        .amount-input:focus { border-color:var(--primary); }
+        .quick-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:8px; }
+        .q-chip { background:#1e2333; padding:12px 5px; border-radius:8px; font-size:0.9rem; text-align:center; cursor:pointer; border:1px solid transparent; font-weight:600; color:#ccc; transition:0.2s; }
+        .q-chip:hover { border-color:var(--primary); color:white; background:#2a3042; }
+        .q-chip.disabled { opacity:0.4; pointer-events:none; }
+        .main-actions { display:flex; gap:12px; }
+        .btn-play { flex:1; padding:18px; border-radius:15px; border:none; font-size:1.4rem; font-weight:900; cursor:pointer; transition:0.1s; text-transform:uppercase; letter-spacing:2px; }
+        .btn-play:disabled { opacity:0.5; cursor:not-allowed; }
+        .btn-start { background:var(--success); color:#003311; box-shadow:0 4px 20px rgba(0,255,136,0.4); }
+        .btn-stop { background:var(--danger); color:#fff; box-shadow:0 4px 20px rgba(255,51,102,0.4); }
+        .btn-play:active:not(:disabled) { transform:scale(0.95); }
+        .history-card { background:var(--card-bg); border-radius:24px; padding:18px; border:1px solid rgba(255,255,255,0.05); }
+        .table-header { display:grid; grid-template-columns:2fr 1fr 1fr; padding-bottom:12px; border-bottom:1px solid #2a2f3f; font-size:0.8rem; color:var(--text-muted); text-transform:uppercase; font-weight:bold; }
+        .history-list { margin-top:10px; display:flex; flex-direction:column; max-height:200px; overflow-y:auto; }
+        .history-item { display:grid; grid-template-columns:2fr 1fr 1fr; font-size:0.9rem; padding:10px 0; border-bottom:1px solid rgba(255,255,255,0.03); font-weight:500; }
+        .val-win { color:var(--success); font-weight:bold; }
+        .val-loss { color:var(--danger); font-weight:bold; }
+        .bot-username { color:#ff9900; font-style:italic; }
+        .modal { position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,0.9); display:none; justify-content:center; align-items:center; z-index:2000; backdrop-filter:blur(10px); }
+        .modal-content { background:var(--card-bg); width:90%; max-width:400px; border-radius:28px; padding:30px 25px; border:1px solid var(--primary); box-shadow:0 0 40px rgba(0,242,255,0.3); }
+        .modal-title { font-size:1.8rem; font-weight:800; color:var(--primary); margin-bottom:20px; text-align:center; }
+        .bank-info { background:#0b0e17; border:1px solid #2a2f3f; border-radius:16px; padding:15px; margin-bottom:20px; text-align:center; }
+        .bank-info .phone { color:var(--primary); font-size:1.3rem; font-weight:700; }
+        .bank-info .name { color:#ff9900; font-weight:500; }
+        .modal-input { width:100%; padding:15px; margin-bottom:15px; background:#0b0e17; border:1px solid #2a2f3f; border-radius:14px; color:white; font-size:1rem; outline:none; }
+        .modal-input:focus { border-color:var(--primary); }
+        .modal-buttons { display:flex; gap:12px; margin-top:20px; }
+        .modal-btn { flex:1; padding:16px; border:none; border-radius:14px; font-size:1rem; font-weight:700; cursor:pointer; transition:0.2s; }
+        .modal-btn.submit { background:var(--primary); color:#000; }
+        .modal-btn.cancel { background:#2a2f3f; color:white; }
+        .minimum-note { font-size:0.8rem; color:var(--text-muted); text-align:center; margin-top:10px; }
     </style>
 </head>
 <body>
@@ -474,11 +87,8 @@
         <section class="main-display">
             <div class="multiplier-container">
                 <div class="multiplier-val" id="multiplier">00.0x</div>
-                <!-- Countdown inside the box (initially hidden) -->
-                <div class="countdown-inside" id="countdownInside" style="display: none;">
-                    <div class="countdown-circle">
-                        <span class="countdown-number" id="countdownNumber">3</span>
-                    </div>
+                <div class="countdown-inside" id="countdownInside" style="display:none;">
+                    <div class="countdown-circle"><span class="countdown-number" id="countdownNumber">3</span></div>
                     <span class="countdown-text" id="countdownText">GET READY</span>
                 </div>
             </div>
@@ -486,26 +96,20 @@
 
         <section class="control-panel">
             <input type="number" class="amount-input" value="1000" id="betAmount" placeholder="ငွေပမာဏ">
-            
             <div class="quick-grid">
                 <div class="q-chip" onclick="setBet(500)">500</div>
                 <div class="q-chip" onclick="setBet(1000)">1,000</div>
                 <div class="q-chip" onclick="setBet(5000)">5,000</div>
                 <div class="q-chip" onclick="setBet(10000)">10,000</div>
             </div>
-
             <div class="main-actions">
                 <button class="btn-play btn-start" id="startBtn" disabled>START</button>
-                <button class="btn-play btn-stop" id="stopBtn" style="display:none">STOP</button>
+                <button class="btn-play btn-stop" id="stopBtn" style="display:none" disabled>STOP</button>
             </div>
         </section>
 
         <section class="history-card">
-            <div class="table-header">
-                <span>ကစားသမား</span>
-                <span>စတင်</span>
-                <span>ရပ်တန့်</span>
-            </div>
+            <div class="table-header"><span>ကစားသမား</span><span>စတင်</span><span>ရပ်တန့်</span></div>
             <div class="history-list" id="historyList"></div>
         </section>
     </div>
@@ -514,11 +118,7 @@
     <div class="modal" id="depositModal">
         <div class="modal-content">
             <div class="modal-title">💰 ငွေသွင်းရန်</div>
-            <!-- Bank account info prominently displayed -->
-            <div class="bank-info">
-                <p class="phone">KPay: 09792310926</p>
-                <p class="name">Name: Daw Mi Thaung</p>
-            </div>
+            <div class="bank-info"><p class="phone">KPay: 09792310926</p><p class="name">Name: Daw Mi Thaung</p></div>
             <input type="text" class="modal-input" id="depositName" placeholder="သင့်နာမည်">
             <input type="text" class="modal-input" id="depositPhone" placeholder="ဖုန်းနံပါတ်">
             <input type="number" class="modal-input" id="depositAmount" placeholder="ငွေပမာဏ (အနည်းဆုံး 3000 MMK)">
@@ -545,384 +145,199 @@
     </div>
 
     <script>
-        // ============================================
-        // TELEGRAM WEB APP INTEGRATION
-        // ============================================
-        
         const tg = window.Telegram.WebApp;
-        tg.expand();
-        tg.ready();
-        
-        const BACKEND_URL = 'https://crashgame-money2.onrender.com'; // Your backend URL
-        
-        // Global variables
-        window.telegramId = null;
-        window.telegramUser = null;
-        window.socket = null;
-        window.isGameRunning = false;
-        window.canBet = false;
-        window.bettingLocked = false;
-        
-        // Get user data from Telegram
+        tg.expand(); tg.ready();
+        const BACKEND_URL = 'https://crashgame-money2.onrender.com'; // Replace with your Render URL
+
+        let telegramId = null, socket = null, isGameRunning = false, canBet = false, bettingLocked = false;
+        let gameStarted = false; // true after 'GO'
+        let stopEnabled = false;
+
         const user = tg.initDataUnsafe?.user;
-        
-        console.log('Telegram initData:', tg.initDataUnsafe);
-        
         if (user) {
-            let usernameDisplay = user.username || (user.first_name + (user.last_name ? ' ' + user.last_name : '')) || 'User_' + user.id.toString().slice(-4);
-            document.getElementById('username').textContent = usernameDisplay;
-            window.telegramId = user.id.toString();
-            
+            let displayName = user.username || (user.first_name + (user.last_name?' '+user.last_name:'')) || 'User_'+user.id.toString().slice(-4);
+            document.getElementById('username').textContent = displayName;
+            telegramId = user.id.toString();
             fetch(`${BACKEND_URL}/api/auth`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    id: user.id,
-                    username: usernameDisplay,
-                    first_name: user.first_name || '',
-                    last_name: user.last_name || ''
-                })
-            })
-            .then(res => res.json())
-            .then(data => {
-                if (data.success) {
-                    document.getElementById('balance').textContent = data.user.balance.toLocaleString();
-                    window.telegramUser = data.user;
-                    initializeSocket();
-                } else {
-                    console.error('Auth failed:', data);
-                }
-            })
-            .catch(err => {
-                console.error('Auth error:', err);
-                initializeSocket();
-            });
+                method:'POST', headers:{'Content-Type':'application/json'},
+                body: JSON.stringify({ id:user.id, username:displayName, first_name:user.first_name, last_name:user.last_name })
+            }).then(r=>r.json()).then(d=>{
+                if(d.success) {
+                    document.getElementById('balance').textContent = d.user.balance.toLocaleString();
+                    initSocket();
+                } else console.error('Auth failed');
+            }).catch(console.error);
         } else {
-            window.telegramId = 'test_user_' + Math.random().toString(36).substr(2, 5);
+            telegramId = 'test_'+Math.random().toString(36).substr(2,5);
             document.getElementById('username').textContent = 'Test User';
-            initializeSocket();
+            initSocket();
         }
-        
-        function initializeSocket() {
-            window.socket = io(BACKEND_URL, {
-                query: { userId: window.telegramId },
-                transports: ['websocket', 'polling']
-            });
-            
-            window.socket.on('connect', () => {
-                window.socket.emit('authenticate', { userId: window.telegramId });
-            });
-            
-            window.socket.on('countdown', (data) => {
-                startCountdownInside(data.seconds);
-                window.canBet = true;
-                window.bettingLocked = false;
+
+        function initSocket() {
+            socket = io(BACKEND_URL, { query: { userId: telegramId }, transports:['websocket','polling'] });
+            socket.on('connect', () => socket.emit('authenticate', { userId: telegramId }));
+            socket.on('countdown', (data) => {
+                startCountdown(data.seconds);
+                canBet = true; bettingLocked = false; gameStarted = false;
                 document.getElementById('startBtn').disabled = false;
-                document.querySelectorAll('.q-chip').forEach(chip => chip.classList.remove('disabled'));
-            });
-            
-            window.socket.on('gameStart', () => {
-                window.canBet = false;
-                window.bettingLocked = true;
-                document.getElementById('startBtn').disabled = true;
-                document.querySelectorAll('.q-chip').forEach(chip => chip.classList.add('disabled'));
-                // Hide countdown
-                document.getElementById('countdownInside').style.display = 'none';
-            });
-            
-            window.socket.on('multiplier', (data) => {
-                document.getElementById('multiplier').textContent = data.multiplier.toFixed(2) + 'x';
-                window.isGameRunning = data.gameState === 'running';
-            });
-            
-            window.socket.on('gameCrashed', (data) => {
-                document.getElementById('multiplier').style.color = 'var(--danger)';
-                setTimeout(() => {
-                    document.getElementById('multiplier').style.color = '';
-                }, 500);
+                document.querySelectorAll('.q-chip').forEach(c=>c.classList.remove('disabled'));
+                // If START was clicked before, button might be STOP but disabled; we reset on new countdown
                 document.getElementById('startBtn').style.display = 'block';
                 document.getElementById('stopBtn').style.display = 'none';
+                stopEnabled = false;
             });
-            
-            window.socket.on('balanceUpdate', (data) => {
-                if (data.userId === window.telegramId) {
-                    document.getElementById('balance').textContent = data.balance.toLocaleString();
+            socket.on('gameStart', () => {
+                canBet = false; bettingLocked = true; gameStarted = true;
+                document.getElementById('startBtn').disabled = true;
+                document.querySelectorAll('.q-chip').forEach(c=>c.classList.add('disabled'));
+                document.getElementById('countdownInside').style.display = 'none';
+                // Enable STOP button if user has placed a bet
+                if (document.getElementById('stopBtn').style.display === 'block') {
+                    document.getElementById('stopBtn').disabled = false;
+                    stopEnabled = true;
                 }
             });
-            
-            window.socket.on('activeBets', (data) => {
-                updateActiveBets(data.bets);
+            socket.on('multiplier', (data) => {
+                document.getElementById('multiplier').textContent = data.multiplier.toFixed(2) + 'x';
+                isGameRunning = data.gameState === 'running';
             });
-            
-            window.socket.on('newHistory', (data) => {
-                addHistoryItem(data);
+            socket.on('gameCrashed', () => {
+                document.getElementById('multiplier').style.color = 'var(--danger)';
+                setTimeout(()=> document.getElementById('multiplier').style.color = '', 500);
+                document.getElementById('startBtn').style.display = 'block';
+                document.getElementById('stopBtn').style.display = 'none';
+                stopEnabled = false;
             });
-            
-            window.socket.on('betResult', (data) => {
-                if (data.success && data.type === 'cashout') {
-                    tg.showAlert(`✅ Cashout အောင်မြင်သည်!\nMultiplier: ${data.multiplier}x\nအမြတ်: ${data.profit} MMK`);
-                }
-            });
-            
-            window.socket.on('disconnect', () => {
-                setTimeout(() => window.socket.connect(), 1000);
-            });
+            socket.on('balanceUpdate', (d) => { if(d.userId===telegramId) document.getElementById('balance').textContent = d.balance.toLocaleString(); });
+            socket.on('activeBets', (d) => updateActiveBets(d.bets));
+            socket.on('newHistory', addHistoryItem);
+            socket.on('betResult', (d) => { if(d.success && d.type==='cashout') tg.showAlert(`✅ Cashout အောင်မြင်သည်!\nMultiplier: ${d.multiplier}x\nအမြတ်: ${d.profit} MMK`); });
+            socket.on('disconnect', () => setTimeout(()=>socket.connect(),1000));
         }
-        
-        // ============================================
-        // COUNTDOWN INSIDE MULTIPLIER BOX
-        // ============================================
-        function startCountdownInside(seconds) {
-            const container = document.getElementById('countdownInside');
-            const numberEl = document.getElementById('countdownNumber');
-            const textEl = document.getElementById('countdownText');
-            
-            container.style.display = 'flex';
-            let count = seconds;
-            numberEl.textContent = count;
-            textEl.textContent = 'GET READY';
-            
-            const interval = setInterval(() => {
-                count--;
-                if (count > 0) {
-                    numberEl.textContent = count;
-                } else if (count === 0) {
-                    numberEl.textContent = 'GO!';
-                    textEl.textContent = '';
-                } else {
-                    clearInterval(interval);
-                    // Hide after a short delay (handled by gameStart event, but just in case)
-                    setTimeout(() => {
-                        container.style.display = 'none';
-                    }, 500);
-                }
-            }, 1000);
+
+        function startCountdown(sec) {
+            const cont = document.getElementById('countdownInside');
+            const num = document.getElementById('countdownNumber');
+            const txt = document.getElementById('countdownText');
+            cont.style.display = 'flex';
+            let cnt = sec;
+            num.textContent = cnt;
+            txt.textContent = 'GET READY';
+            const iv = setInterval(()=>{
+                cnt--;
+                if(cnt>0) num.textContent = cnt;
+                else if(cnt===0) { num.textContent = 'GO!'; txt.textContent = ''; }
+                else { clearInterval(iv); setTimeout(()=>{ cont.style.display = 'none'; },500); }
+            },1000);
         }
-        
-        // ============================================
-        // BETTING FUNCTIONS
-        // ============================================
-        window.setBet = (val) => document.getElementById('betAmount').value = val;
-        
-        document.getElementById('startBtn').onclick = function() {
-            if (!window.canBet || window.bettingLocked) {
-                tg.showAlert('❌ ယခုအချိန်တွင် Bet လောင်း၍မရပါ။ Countdown ကိုစောင့်ပါ။');
-                return;
-            }
-            
-            const betAmount = parseFloat(document.getElementById('betAmount').value);
-            const currentBalance = parseFloat(document.getElementById('balance').textContent.replace(/,/g, ''));
-            
-            if (!betAmount || betAmount <= 0) {
-                tg.showAlert('❌ ငွေပမာဏ အမှန်အကန်ထည့်ပါ။');
-                return;
-            }
-            if (betAmount > currentBalance) {
-                tg.showAlert('❌ လက်ကျန်ငွေ မလုံလောက်ပါ။');
-                return;
-            }
-            if (!window.telegramId || !window.socket?.connected) {
-                tg.showAlert('❌ ချိတ်ဆက်မှု မရှိပါ။');
-                return;
-            }
-            
-            window.socket.emit('placeBet', {
-                userId: window.telegramId,
-                username: document.getElementById('username').textContent,
-                amount: betAmount
-            }, (response) => {
-                if (response?.success) {
+
+        window.setBet = (v) => document.getElementById('betAmount').value = v;
+
+        document.getElementById('startBtn').onclick = () => {
+            if (!canBet || bettingLocked) { tg.showAlert('❌ ယခုအချိန်တွင် Bet မလောင်းနိုင်ပါ။'); return; }
+            const bet = parseFloat(document.getElementById('betAmount').value);
+            const bal = parseFloat(document.getElementById('balance').textContent.replace(/,/g,''));
+            if(!bet||bet<=0) { tg.showAlert('❌ ငွေပမာဏထည့်ပါ။'); return; }
+            if(bet>bal) { tg.showAlert('❌ လက်ကျန်မလုံလောက်'); return; }
+            if(!telegramId||!socket?.connected) { tg.showAlert('❌ ချိတ်ဆက်မှုမရှိ'); return; }
+            socket.emit('placeBet', { userId:telegramId, username:document.getElementById('username').textContent, amount:bet }, (res)=>{
+                if(res?.success) {
                     document.getElementById('startBtn').style.display = 'none';
                     document.getElementById('stopBtn').style.display = 'block';
-                    if (response.newBalance) {
-                        document.getElementById('balance').textContent = response.newBalance.toLocaleString();
-                    }
-                } else {
-                    tg.showAlert(response?.message || 'Bet လောင်းရာတွင် ပြဿနာရှိသည်။');
-                }
+                    // Disable STOP until game actually starts
+                    document.getElementById('stopBtn').disabled = true;
+                    stopEnabled = false;
+                    if(res.newBalance) document.getElementById('balance').textContent = res.newBalance.toLocaleString();
+                } else tg.showAlert(res?.message||'Bet မအောင်မြင်');
             });
         };
-        
-        document.getElementById('stopBtn').onclick = function() {
-            if (!window.isGameRunning) {
-                tg.showAlert('❌ ဂိမ်းအလုပ်လုပ်နေချိန်မှသာ Stop နှိပ်ပါ။');
-                return;
-            }
-            const currentMultiplier = parseFloat(document.getElementById('multiplier').textContent.replace('x', ''));
-            window.socket.emit('cashOut', {
-                userId: window.telegramId,
-                multiplier: currentMultiplier
-            }, (response) => {
-                if (response?.success) {
+
+        document.getElementById('stopBtn').onclick = () => {
+            if (!gameStarted || !isGameRunning) { tg.showAlert('❌ ဂိမ်းစပြီးမှသာ Stop နှိပ်ပါ။'); return; }
+            const mult = parseFloat(document.getElementById('multiplier').textContent.replace('x',''));
+            socket.emit('cashOut', { userId:telegramId, multiplier:mult }, (res)=>{
+                if(res?.success) {
                     document.getElementById('stopBtn').style.display = 'none';
                     document.getElementById('startBtn').style.display = 'block';
-                    if (response.newBalance) {
-                        document.getElementById('balance').textContent = response.newBalance.toLocaleString();
-                    }
-                } else {
-                    tg.showAlert(response?.message || 'Cashout လုပ်ရာတွင် ပြဿနာရှိသည်။');
-                }
+                    if(res.newBalance) document.getElementById('balance').textContent = res.newBalance.toLocaleString();
+                } else tg.showAlert(res?.message||'Cashout မအောင်မြင်');
             });
         };
-        
-        // ============================================
-        // DEPOSIT MODAL (using fetch)
-        // ============================================
-        window.openDepositModal = () => {
-            document.getElementById('depositModal').style.display = 'flex';
-        };
-        
+
+        // Deposit
+        window.openDepositModal = () => document.getElementById('depositModal').style.display = 'flex';
         window.closeDepositModal = () => {
             document.getElementById('depositModal').style.display = 'none';
-            document.getElementById('depositName').value = '';
-            document.getElementById('depositPhone').value = '';
-            document.getElementById('depositAmount').value = '';
+            ['depositName','depositPhone','depositAmount'].forEach(id=>document.getElementById(id).value='');
         };
-        
         window.submitDeposit = async () => {
             const name = document.getElementById('depositName').value.trim();
             const phone = document.getElementById('depositPhone').value.trim();
             const amount = parseInt(document.getElementById('depositAmount').value.trim());
-            
-            if (!name || !phone || !amount) {
-                tg.showAlert('❌ နာမည်၊ ဖုန်းနံပါတ်နှင့် ငွေပမာဏ အပြည့်အစုံထည့်ပါ။');
-                return;
-            }
-            if (isNaN(amount) || amount < 3000) {
-                tg.showAlert('❌ ငွေပမာဏသည် အနည်းဆုံး 3000 MMK ဖြစ်ရပါမည်။');
-                return;
-            }
-            
-            // Use fetch to send to backend
+            if(!name||!phone||!amount) { tg.showAlert('❌ အချက်အလက်အပြည့်ထည့်ပါ။'); return; }
+            if(amount<3000) { tg.showAlert('❌ အနည်းဆုံး 3000 MMK ဖြစ်ရမည်။'); return; }
             try {
-                const response = await fetch(`${BACKEND_URL}/api/deposit`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        userId: window.telegramId,
-                        username: document.getElementById('username').textContent,
-                        name, phone, amount
-                    })
+                const r = await fetch(`${BACKEND_URL}/api/deposit`, {
+                    method:'POST', headers:{'Content-Type':'application/json'},
+                    body: JSON.stringify({ userId:telegramId, username:document.getElementById('username').textContent, name, phone, amount })
                 });
-                const data = await response.json();
-                if (data.success) {
-                    tg.showAlert(`✅ ငွေသွင်းရန် တောင်းဆိုချက် (${amount} MMK) ကို ပို့လိုက်ပါပြီ။ Admin အတည်ပြုပါလိမ့်မယ်။`);
-                } else {
-                    tg.showAlert('❌ ' + (data.message || 'ငွေသွင်းရာတွင် ပြဿနာရှိသည်။'));
-                }
-            } catch (err) {
-                console.error(err);
-                tg.showAlert('❌ Server နှင့် ချိတ်ဆက်မရပါ။');
-            }
-            
+                const d = await r.json();
+                if(d.success) tg.showAlert(`✅ ငွေသွင်းတောင်းဆိုချက် (${amount} MMK) ပို့ပြီးပါပြီ။ Admin အတည်ပြုပါလိမ့်မယ်။`);
+                else tg.showAlert('❌ '+ (d.message||'ငွေသွင်းရာတွင်ပြဿနာ'));
+            } catch(e) { tg.showAlert('❌ Server ချိတ်ဆက်မရ'); }
             closeDepositModal();
         };
-        
-        // ============================================
-        // WITHDRAW MODAL (using fetch)
-        // ============================================
-        window.openWithdrawModal = () => {
-            document.getElementById('withdrawModal').style.display = 'flex';
-        };
-        
+
+        // Withdraw
+        window.openWithdrawModal = () => document.getElementById('withdrawModal').style.display = 'flex';
         window.closeWithdrawModal = () => {
             document.getElementById('withdrawModal').style.display = 'none';
-            document.getElementById('withdrawName').value = '';
-            document.getElementById('withdrawPhone').value = '';
-            document.getElementById('withdrawAmount').value = '';
+            ['withdrawName','withdrawPhone','withdrawAmount'].forEach(id=>document.getElementById(id).value='');
         };
-        
         window.submitWithdraw = async () => {
             const name = document.getElementById('withdrawName').value.trim();
             const phone = document.getElementById('withdrawPhone').value.trim();
             const amount = parseInt(document.getElementById('withdrawAmount').value.trim());
-            
-            if (!name || !phone || !amount) {
-                tg.showAlert('❌ နာမည်၊ ဖုန်းနံပါတ်နှင့် ငွေပမာဏ အပြည့်အစုံထည့်ပါ။');
-                return;
-            }
-            if (isNaN(amount) || amount <= 0) {
-                tg.showAlert('❌ ငွေပမာဏ မှန်ကန်စွာထည့်ပါ။');
-                return;
-            }
-            
-            const currentBalance = parseInt(document.getElementById('balance').textContent.replace(/,/g, ''));
-            if (amount > currentBalance) {
-                tg.showAlert('❌ လက်ကျန်ငွေ မလုံလောက်ပါ။');
-                return;
-            }
-            
+            if(!name||!phone||!amount) { tg.showAlert('❌ အချက်အလက်အပြည့်ထည့်ပါ။'); return; }
+            const curBal = parseInt(document.getElementById('balance').textContent.replace(/,/g,''));
+            if(amount>curBal) { tg.showAlert('❌ လက်ကျန်မလုံလောက်'); return; }
             try {
-                const response = await fetch(`${BACKEND_URL}/api/withdraw`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        userId: window.telegramId,
-                        username: document.getElementById('username').textContent,
-                        name, phone, amount
-                    })
+                const r = await fetch(`${BACKEND_URL}/api/withdraw`, {
+                    method:'POST', headers:{'Content-Type':'application/json'},
+                    body: JSON.stringify({ userId:telegramId, username:document.getElementById('username').textContent, name, phone, amount })
                 });
-                const data = await response.json();
-                if (data.success) {
-                    tg.showAlert(`✅ ငွေထုတ်ရန် တောင်းဆိုချက် (${amount} MMK) ကို ပို့လိုက်ပါပြီ။ Admin အတည်ပြုပါလိမ့်မယ်။`);
-                } else {
-                    tg.showAlert('❌ ' + (data.message || 'ငွေထုတ်ရာတွင် ပြဿနာရှိသည်။'));
-                }
-            } catch (err) {
-                console.error(err);
-                tg.showAlert('❌ Server နှင့် ချိတ်ဆက်မရပါ။');
-            }
-            
+                const d = await r.json();
+                if(d.success) tg.showAlert(`✅ ငွေထုတ်တောင်းဆိုချက် (${amount} MMK) ပို့ပြီးပါပြီ။ Admin အတည်ပြုပါလိမ့်မယ်။`);
+                else tg.showAlert('❌ '+ (d.message||'ငွေထုတ်ရာတွင်ပြဿနာ'));
+            } catch(e) { tg.showAlert('❌ Server ချိတ်ဆက်မရ'); }
             closeWithdrawModal();
         };
-        
-        // ============================================
-        // HISTORY FUNCTIONS
-        // ============================================
-        function addHistoryItem(data) {
-            const historyList = document.getElementById('historyList');
-            const item = document.createElement('div');
-            item.className = 'history-item';
-            const usernameClass = data.isBot ? 'bot-username' : '';
-            let resultClass = '', stopText = '';
-            if (data.stop) {
-                if (data.stop > data.start) {
-                    resultClass = 'val-win';
-                    stopText = data.stop.toFixed(2) + 'x';
-                } else {
-                    resultClass = 'val-loss';
-                    stopText = 'CRASH';
-                }
-            } else {
-                stopText = 'Wait..';
-            }
-            item.innerHTML = `
-                <span class="${usernameClass}">${data.username || 'Player'}</span>
-                <span>${data.start.toFixed(2)}x</span>
-                <span class="${resultClass}">${stopText}</span>
-            `;
-            historyList.insertBefore(item, historyList.firstChild);
-            while (historyList.children.length > 15) historyList.removeChild(historyList.lastChild);
+
+        function addHistoryItem(d) {
+            const list = document.getElementById('historyList');
+            const it = document.createElement('div'); it.className='history-item';
+            const uclass = d.isBot?'bot-username':'';
+            let rclass='', stoptxt='';
+            if(d.stop) {
+                if(d.stop>d.start) { rclass='val-win'; stoptxt=d.stop.toFixed(2)+'x'; }
+                else { rclass='val-loss'; stoptxt='CRASH'; }
+            } else stoptxt='Wait..';
+            it.innerHTML = `<span class="${uclass}">${d.username||'Player'}</span><span>${d.start.toFixed(2)}x</span><span class="${rclass}">${stoptxt}</span>`;
+            list.insertBefore(it, list.firstChild);
+            while(list.children.length>15) list.removeChild(list.lastChild);
         }
-        
+
         function updateActiveBets(bets) {
-            const historyList = document.getElementById('historyList');
-            historyList.innerHTML = '';
-            bets.forEach(bet => {
-                const item = document.createElement('div');
-                item.className = 'history-item';
-                item.innerHTML = `
-                    <span class="${bet.isBot ? 'bot-username' : ''}">${bet.username}</span>
-                    <span>1.00x</span>
-                    <span style="color:#666">Playing..</span>
-                `;
-                historyList.appendChild(item);
+            const list = document.getElementById('historyList');
+            list.innerHTML = '';
+            bets.forEach(b=>{
+                const it = document.createElement('div'); it.className='history-item';
+                it.innerHTML = `<span class="${b.isBot?'bot-username':''}">${b.username}</span><span>1.00x</span><span style="color:#666">Playing..</span>`;
+                list.appendChild(it);
             });
         }
-        
-        tg.setHeaderColor('#060912');
-        tg.setBackgroundColor('#060912');
-        console.log('✅ Telegram Web App initialized');
+
+        tg.setHeaderColor('#060912'); tg.setBackgroundColor('#060912');
     </script>
 </body>
 </html>

@@ -1,8 +1,17 @@
-// Backend URL - ဒီနေရာမှာ အလွယ်တကူပြင်လို့ရပါတယ်
-const BACKEND_URL = 'https://crashgame-money2.onrender.com'; // သင့် Backend URL ထည့်ပါ
+// Backend URL
+const BACKEND_URL = 'https://crashgame-money2.onrender.com';
 
-// Socket.io connection
-const socket = io(BACKEND_URL);
+// Get Telegram ID from global or localStorage
+let telegramId = window.telegramId || localStorage.getItem('telegramId') || null;
+
+// Socket.io connection with user ID in query
+const socket = io(BACKEND_URL, {
+    query: { userId: telegramId || 'anonymous' },
+    transports: ['websocket', 'polling'],
+    reconnection: true,
+    reconnectionAttempts: 5,
+    reconnectionDelay: 1000
+});
 
 // DOM Elements
 const multiplierEl = document.getElementById('multiplier');
@@ -20,27 +29,24 @@ let isBetPlaced = false;
 
 // Socket Event Listeners
 socket.on('connect', () => {
-    console.log('Connected to server');
-    // Optional: Send auth data if needed
-    // socket.emit('authenticate', { userId: 'user123' });
+    console.log('✅ Connected to server');
+    if (telegramId) {
+        socket.emit('authenticate', { userId: telegramId });
+    }
 });
 
-socket.on('disconnect', () => {
-    console.log('Disconnected from server');
+socket.on('connect_error', (error) => {
+    console.error('Socket connection error:', error);
 });
 
-// Listen for multiplier updates from backend
 socket.on('multiplier', (data) => {
-    // data format: { multiplier: number, gameState: 'running' | 'waiting' | 'crashed' }
     if (data && data.multiplier !== undefined) {
         currentMultiplier = data.multiplier;
         multiplierEl.textContent = currentMultiplier.toFixed(2) + 'x';
         
-        // Update game state
-        if (data.gameState === 'running') {
-            isGameRunning = true;
-        } else if (data.gameState === 'waiting' || data.gameState === 'crashed') {
-            isGameRunning = false;
+        isGameRunning = data.gameState === 'running';
+        
+        if (data.gameState === 'waiting' || data.gameState === 'crashed') {
             if (!isBetPlaced) {
                 startBtn.style.display = 'block';
                 stopBtn.style.display = 'none';
@@ -49,50 +55,43 @@ socket.on('multiplier', (data) => {
     }
 });
 
-// Listen for game crash event
 socket.on('gameCrashed', (data) => {
-    console.log('Game crashed at:', data.multiplier);
-    // Optional: Add crash animation or sound effect
+    console.log('💥 Game crashed at:', data.multiplier);
     multiplierEl.style.color = 'var(--danger)';
     setTimeout(() => {
         multiplierEl.style.color = '';
     }, 500);
-});
-
-// Listen for bet result
-socket.on('betResult', (data) => {
-    if (data.success) {
-        if (data.type === 'cashout') {
-            // Show success message
-            alert(`Cashed out at ${data.multiplier}x! Profit: ${data.profit}`);
-        }
-        
-        // Update balance if provided
-        if (data.newBalance) {
-            updateBalance(data.newBalance);
-        }
-    } else {
-        alert(data.message || 'Bet failed');
-    }
     
     // Reset bet state
-    if (data.type === 'cashout' || data.type === 'bet') {
-        isBetPlaced = false;
-        startBtn.style.display = 'block';
-        stopBtn.style.display = 'none';
-    }
+    isBetPlaced = false;
+    startBtn.style.display = 'block';
+    stopBtn.style.display = 'none';
 });
 
-// Listen for balance updates
 socket.on('balanceUpdate', (data) => {
-    if (data.balance) {
+    if (data.userId === telegramId) {
         updateBalance(data.balance);
     }
 });
 
-// Listen for new history entries
+socket.on('activeBets', (data) => {
+    updateActiveBets(data.bets);
+});
+
 socket.on('newHistory', (data) => {
     addHistoryItem(data);
+});
+
+socket.on('betResult', (data) => {
+    if (data.success) {
+        if (data.type === 'cashout') {
+            if (window.tg && window.tg.showAlert) {
+                window.tg.showAlert(`✅ Cashout အောင်မြင်သည်!\nMultiplier: ${data.multiplier}x\nအမြတ်: ${data.profit} MMK`);
+            } else {
+                alert(`✅ Cashout အောင်မြင်သည်!\nMultiplier: ${data.multiplier}x\nအမြတ်: ${data.profit} MMK`);
+            }
+        }
+    }
 });
 
 // UI Functions
@@ -100,71 +99,139 @@ function setBet(val) {
     betAmountInput.value = val;
 }
 
-function showModal(id) {
-    document.getElementById(id).style.display = 'flex';
-}
-
-function hideModal(id) {
-    document.getElementById(id).style.display = 'none';
-}
-
 function updateBalance(newBalance) {
     balanceEl.textContent = newBalance.toLocaleString();
+    if (telegramId) {
+        localStorage.setItem(`balance_${telegramId}`, newBalance);
+    }
 }
 
 function addHistoryItem(data) {
     const item = document.createElement('div');
     item.className = 'history-item';
     
+    const usernameClass = data.isBot ? 'bot-username' : '';
     const stopClass = data.stop >= data.start ? 'val-win' : '';
     const stopText = data.stop ? data.stop.toFixed(2) + 'x' : 'Wait..';
     
     item.innerHTML = `
-        <span>${data.username || 'Player'}</span>
+        <span class="${usernameClass}">${data.username || 'Player'}</span>
         <span>${data.start.toFixed(2)}x</span>
         <span class="${stopClass}">${stopText}</span>
     `;
     
     historyList.insertBefore(item, historyList.firstChild);
     
-    // Keep only last 10 items
-    while (historyList.children.length > 10) {
+    // Keep only last 15 items
+    while (historyList.children.length > 15) {
         historyList.removeChild(historyList.lastChild);
+    }
+}
+
+function updateActiveBets(bets) {
+    // Clear existing items
+    historyList.innerHTML = '';
+    
+    // Add active bets first
+    bets.forEach(bet => {
+        const item = document.createElement('div');
+        item.className = 'history-item';
+        const usernameClass = bet.isBot ? 'bot-username' : '';
+        
+        item.innerHTML = `
+            <span class="${usernameClass}">${bet.username}</span>
+            <span>1.00x</span>
+            <span style="color:#666">Playing..</span>
+        `;
+        historyList.appendChild(item);
+    });
+    
+    // If no active bets, show sample bots
+    if (bets.length === 0) {
+        const sampleBots = [
+            { username: 'U Thu Ha', isBot: true },
+            { username: 'Kyaw Kyaw', isBot: true },
+            { username: 'Ma Ma Lay', isBot: true }
+        ];
+        
+        sampleBots.forEach(bot => {
+            const item = document.createElement('div');
+            item.className = 'history-item';
+            item.innerHTML = `
+                <span class="bot-username">${bot.username}</span>
+                <span>1.00x</span>
+                <span style="color:#666">Waiting..</span>
+            `;
+            historyList.appendChild(item);
+        });
     }
 }
 
 // Start Button Click Handler
 startBtn.onclick = () => {
     const betAmount = parseFloat(betAmountInput.value);
+    const balanceText = balanceEl.textContent.replace(/,/g, '');
+    const currentBalance = parseFloat(balanceText);
+    
+    console.log('Start clicked:', { betAmount, currentBalance, telegramId });
     
     if (!betAmount || betAmount <= 0) {
-        alert('Please enter valid bet amount');
+        const message = '❌ ငွေပမာဏ အမှန်အကန်ထည့်ပါ။';
+        if (window.tg && window.tg.showAlert) {
+            window.tg.showAlert(message);
+        } else {
+            alert(message);
+        }
         return;
     }
     
-    const currentBalance = parseFloat(balanceEl.textContent.replace(/,/g, ''));
     if (betAmount > currentBalance) {
-        alert('Insufficient balance');
+        const message = '❌ လက်ကျန်ငွေ မလုံလောက်ပါ။';
+        if (window.tg && window.tg.showAlert) {
+            window.tg.showAlert(message);
+        } else {
+            alert(message);
+        }
+        return;
+    }
+    
+    if (!telegramId) {
+        telegramId = prompt('User ID ထည့်ပါ:') || 'guest_' + Date.now();
+        localStorage.setItem('telegramId', telegramId);
+    }
+    
+    if (!socket.connected) {
+        const message = '❌ Server နှင့် ချိတ်ဆက်မှု မရှိပါ။';
+        if (window.tg && window.tg.showAlert) {
+            window.tg.showAlert(message);
+        } else {
+            alert(message);
+        }
         return;
     }
     
     // Emit placeBet event to backend
     socket.emit('placeBet', {
-        amount: betAmount,
-        username: usernameEl.textContent
+        userId: telegramId,
+        username: usernameEl.textContent,
+        amount: betAmount
     }, (response) => {
+        console.log('placeBet response:', response);
         if (response && response.success) {
-            // Bet placed successfully
             isBetPlaced = true;
             startBtn.style.display = 'none';
             stopBtn.style.display = 'block';
             
-            // Update balance if provided
             if (response.newBalance) {
                 updateBalance(response.newBalance);
             }
         } else {
-            alert(response?.message || 'Failed to place bet');
+            const message = response?.message || 'Bet လောင်းရာတွင် ပြဿနာရှိသည်။';
+            if (window.tg && window.tg.showAlert) {
+                window.tg.showAlert(message);
+            } else {
+                alert(message);
+            }
         }
     });
 };
@@ -172,16 +239,27 @@ startBtn.onclick = () => {
 // Stop Button Click Handler
 stopBtn.onclick = () => {
     if (!isGameRunning) {
-        alert('Game is not running');
+        const message = '❌ ဂိမ်းအလုပ်လုပ်နေချိန်မှသာ Stop နှိပ်ပါ။';
+        if (window.tg && window.tg.showAlert) {
+            window.tg.showAlert(message);
+        } else {
+            alert(message);
+        }
         return;
     }
     
+    const multiplierText = multiplierEl.textContent.replace('x', '');
+    const currentMultiplier = parseFloat(multiplierText);
+    
+    console.log('Stop clicked:', { currentMultiplier, telegramId });
+    
     // Emit cashOut event to backend
     socket.emit('cashOut', {
+        userId: telegramId,
         multiplier: currentMultiplier
     }, (response) => {
+        console.log('cashOut response:', response);
         if (response && response.success) {
-            // Cashed out successfully
             isBetPlaced = false;
             stopBtn.style.display = 'none';
             startBtn.style.display = 'block';
@@ -189,13 +267,25 @@ stopBtn.onclick = () => {
             if (response.newBalance) {
                 updateBalance(response.newBalance);
             }
+            
+            const message = `✅ Cashout အောင်မြင်သည်!\nMultiplier: ${currentMultiplier}x\nအမြတ်: ${response.profit} MMK`;
+            if (window.tg && window.tg.showAlert) {
+                window.tg.showAlert(message);
+            } else {
+                alert(message);
+            }
         } else {
-            alert(response?.message || 'Failed to cash out');
+            const message = response?.message || 'Cashout လုပ်ရာတွင် ပြဿနာရှိသည်။';
+            if (window.tg && window.tg.showAlert) {
+                window.tg.showAlert(message);
+            } else {
+                alert(message);
+            }
         }
     });
 };
 
-// Optional: Quick bet with predefined amounts
+// Quick bet chips
 document.querySelectorAll('.q-chip').forEach(chip => {
     chip.addEventListener('click', function() {
         const value = parseInt(this.textContent.replace(/,/g, ''));
@@ -203,9 +293,20 @@ document.querySelectorAll('.q-chip').forEach(chip => {
     });
 });
 
-// Optional: Auto reconnect on disconnect
+// Auto reconnect on disconnect
 socket.on('disconnect', () => {
+    console.log('🔴 Disconnected from server');
     setTimeout(() => {
         socket.connect();
     }, 1000);
 });
+
+// Load saved balance if any
+if (telegramId) {
+    const savedBalance = localStorage.getItem(`balance_${telegramId}`);
+    if (savedBalance) {
+        balanceEl.textContent = parseInt(savedBalance).toLocaleString();
+    }
+}
+
+console.log('✅ Script.js initialized');

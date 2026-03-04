@@ -1,5 +1,5 @@
 // Backend URL - ဒီနေရာမှာ အလွယ်တကူပြင်လို့ရပါတယ်
-const BACKEND_URL = 'https://your-backend-url.com'; // သင့် Backend URL ထည့်ပါ
+const BACKEND_URL = 'https://crashgame-money2.onrender.com'; // သင့် Backend URL ထည့်ပါ
 
 // Socket.io connection
 const socket = io(BACKEND_URL);

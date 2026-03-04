@@ -181,7 +181,6 @@
                 canBet = true; bettingLocked = false; gameStarted = false;
                 document.getElementById('startBtn').disabled = false;
                 document.querySelectorAll('.q-chip').forEach(c=>c.classList.remove('disabled'));
-                // If START was clicked before, button might be STOP but disabled; we reset on new countdown
                 document.getElementById('startBtn').style.display = 'block';
                 document.getElementById('stopBtn').style.display = 'none';
                 stopEnabled = false;
@@ -191,7 +190,6 @@
                 document.getElementById('startBtn').disabled = true;
                 document.querySelectorAll('.q-chip').forEach(c=>c.classList.add('disabled'));
                 document.getElementById('countdownInside').style.display = 'none';
-                // Enable STOP button if user has placed a bet
                 if (document.getElementById('stopBtn').style.display === 'block') {
                     document.getElementById('stopBtn').disabled = false;
                     stopEnabled = true;
@@ -244,7 +242,6 @@
                 if(res?.success) {
                     document.getElementById('startBtn').style.display = 'none';
                     document.getElementById('stopBtn').style.display = 'block';
-                    // Disable STOP until game actually starts
                     document.getElementById('stopBtn').disabled = true;
                     stopEnabled = false;
                     if(res.newBalance) document.getElementById('balance').textContent = res.newBalance.toLocaleString();

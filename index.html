@@ -6,8 +6,8 @@
     <title>CRASH PRO - ULTIMATE UI</title>
     <!-- Socket.io Client SDK -->
     <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
-    <!-- Main Script -->
-    <script src="script.js" defer></script>
+    <!-- Telegram Web App SDK -->
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
         :root {
             --primary: #00f2ff;
@@ -211,65 +211,21 @@
             margin-top: 10px;
             display: flex;
             flex-direction: column;
+            max-height: 200px;
+            overflow-y: auto;
         }
 
         .history-item {
             display: grid;
             grid-template-columns: 2fr 1fr 1fr;
             font-size: 0.9rem;
-            padding: 12px 0;
+            padding: 8px 0;
             border-bottom: 1px solid rgba(255,255,255,0.03);
             font-weight: 500;
         }
 
         .val-win { color: var(--success); font-weight: bold; }
-
-        /* --- MODAL --- */
-        .modal {
-            position: fixed;
-            inset: 0;
-            background: rgba(0,0,0,0.92);
-            display: none;
-            align-items: center;
-            justify-content: center;
-            z-index: 100;
-            padding: 20px;
-            backdrop-filter: blur(5px);
-        }
-
-        .modal-box {
-            background: #161b29;
-            width: 100%;
-            max-width: 360px;
-            border-radius: 28px;
-            padding: 30px;
-            border: 1px solid var(--primary);
-            text-align: center;
-            box-shadow: 0 0 30px rgba(0,242,255,0.2);
-        }
-
-        .m-input {
-            width: 100%;
-            padding: 14px;
-            margin-bottom: 15px;
-            background: #000;
-            border: 1px solid #444;
-            border-radius: 12px;
-            color: white;
-            font-size: 1rem;
-        }
-
-        .btn-submit {
-            width: 100%;
-            padding: 14px;
-            background: var(--primary);
-            color: #000;
-            border: none;
-            border-radius: 12px;
-            font-weight: 800;
-            cursor: pointer;
-            font-size: 1rem;
-        }
+        .bot-username { color: #ff9900; font-style: italic; }
     </style>
 </head>
 <body>
@@ -280,8 +236,8 @@
                 <div class="balance-display"><span id="balance">1,000</span> <small style="font-size: 0.75rem; color: #666;">MMK</small></div>
             </div>
             <div class="nav-btns">
-                <button class="action-sm deposit" onclick="showModal('depModal')">ငွေသွင်း</button>
-                <button class="action-sm withdraw" onclick="showModal('witModal')">ငွေထုတ်</button>
+                <button class="action-sm deposit" onclick="showDepositModal()">ငွေသွင်း</button>
+                <button class="action-sm withdraw" onclick="showWithdrawModal()">ငွေထုတ်</button>
             </div>
         </header>
 
@@ -307,48 +263,363 @@
 
         <section class="history-card">
             <div class="table-header">
-                <span>Username</span>
-                <span>Start</span>
-                <span>Stop</span>
+                <span>ကစားသမား</span>
+                <span>စတင်</span>
+                <span>ရပ်တန့်</span>
             </div>
-            <div class="history-list" id="historyList">
-                <div class="history-item">
-                    <span>Player_01</span>
-                    <span>1.00x</span>
-                    <span class="val-win">1.50x</span>
-                </div>
-                <div class="history-item">
-                    <span>Gamer_X</span>
-                    <span>1.00x</span>
-                    <span style="color:#666">Wait..</span>
-                </div>
-            </div>
+            <div class="history-list" id="historyList"></div>
         </section>
     </div>
 
-    <div class="modal" id="depModal">
-        <div class="modal-box">
-            <h2 style="margin-bottom:10px;">ငွေသွင်းရန်</h2>
-            <div style="background:#000; padding:15px; border-radius:12px; margin-bottom:20px;">
-                <p style="color:var(--primary); font-weight:bold; font-size:1.1rem;">KPay: 09792310926</p>
-                <p style="color:#aaa; font-size:0.9rem;">Name: Daw Mi Thaung</p>
-            </div>
-            <p style="font-size:0.85rem; color:#888; margin-bottom:10px; text-align:left;">ငွေလွှဲပြေစာ တင်ရန်:</p>
-            <input type="file" class="m-input">
-            <button class="btn-submit" onclick="hideModal('depModal')">SUBMIT</button>
-            <p style="margin-top:20px; cursor:pointer; color: var(--danger); font-weight:bold;" onclick="hideModal('depModal')">CANCEL</p>
-        </div>
-    </div>
-
-    <div class="modal" id="witModal">
-        <div class="modal-box">
-            <h2 style="margin-bottom:20px;">ငွေထုတ်ရန်</h2>
-            <input type="text" class="m-input" placeholder="KPay ဖုန်းနံပါတ်">
-            <input type="text" class="m-input" placeholder="KPay အမည်">
-            <input type="number" class="m-input" placeholder="ထုတ်ယူမည့် ပမာဏ">
-            <button class="btn-submit" onclick="hideModal('witModal')">WITHDRAW</button>
-            <p style="margin-top:20px; cursor:pointer; color: var(--danger); font-weight:bold;" onclick="hideModal('witModal')">CANCEL</p>
-        </div>
-    </div>
+    <script>
+        // ============================================
+        // TELEGRAM WEB APP INTEGRATION
+        // ============================================
+        
+        // Initialize Telegram Web App
+        const tg = window.Telegram.WebApp;
+        tg.expand();
+        tg.ready();
+        
+        // Backend URL
+        const BACKEND_URL = 'https://crashgame-money2.onrender.com';
+        
+        // Global variables
+        window.telegramId = null;
+        window.telegramUser = null;
+        window.socket = null;
+        window.isGameRunning = false;
+        
+        // Get user data from Telegram
+        const user = tg.initDataUnsafe?.user;
+        
+        console.log('Telegram initData:', tg.initDataUnsafe);
+        
+        if (user) {
+            console.log('Telegram User found:', user);
+            
+            // Format username - prioritize username, then first_name, then fallback
+            let usernameDisplay = '';
+            if (user.username) {
+                usernameDisplay = user.username;
+            } else if (user.first_name) {
+                usernameDisplay = user.first_name + (user.last_name ? ' ' + user.last_name : '');
+            } else {
+                usernameDisplay = 'User_' + user.id.toString().slice(-4);
+            }
+            
+            document.getElementById('username').textContent = usernameDisplay;
+            window.telegramId = user.id.toString();
+            
+            // Authenticate with backend
+            fetch(`${BACKEND_URL}/api/auth`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    id: user.id,
+                    username: usernameDisplay,
+                    first_name: user.first_name || '',
+                    last_name: user.last_name || ''
+                })
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.success) {
+                    document.getElementById('balance').textContent = data.user.balance.toLocaleString();
+                    window.telegramUser = data.user;
+                    console.log('Auth successful:', data.user);
+                    
+                    // Initialize Socket.io after auth
+                    initializeSocket();
+                } else {
+                    console.error('Auth failed:', data);
+                }
+            })
+            .catch(err => {
+                console.error('Auth error:', err);
+                // Still initialize socket for testing
+                initializeSocket();
+            });
+        } else {
+            console.log('No Telegram user found - using test mode');
+            window.telegramId = 'test_user_' + Math.random().toString(36).substr(2, 5);
+            document.getElementById('username').textContent = 'Test User';
+            initializeSocket();
+        }
+        
+        // Initialize Socket.io
+        function initializeSocket() {
+            console.log('Initializing socket with userId:', window.telegramId);
+            
+            window.socket = io(BACKEND_URL, {
+                query: { userId: window.telegramId },
+                transports: ['websocket', 'polling']
+            });
+            
+            window.socket.on('connect', () => {
+                console.log('Socket connected with ID:', window.socket.id);
+                window.socket.emit('authenticate', { userId: window.telegramId });
+            });
+            
+            window.socket.on('multiplier', (data) => {
+                document.getElementById('multiplier').textContent = data.multiplier.toFixed(2) + 'x';
+                window.isGameRunning = data.gameState === 'running';
+            });
+            
+            window.socket.on('gameCrashed', (data) => {
+                console.log('Game crashed at:', data.multiplier);
+                document.getElementById('multiplier').style.color = 'var(--danger)';
+                setTimeout(() => {
+                    document.getElementById('multiplier').style.color = '';
+                }, 500);
+                
+                // Reset start button
+                document.getElementById('startBtn').style.display = 'block';
+                document.getElementById('stopBtn').style.display = 'none';
+            });
+            
+            window.socket.on('balanceUpdate', (data) => {
+                if (data.userId === window.telegramId) {
+                    document.getElementById('balance').textContent = data.balance.toLocaleString();
+                }
+            });
+            
+            window.socket.on('activeBets', (data) => {
+                updateActiveBets(data.bets);
+            });
+            
+            window.socket.on('newHistory', (data) => {
+                addHistoryItem(data);
+            });
+            
+            window.socket.on('betResult', (data) => {
+                if (data.success) {
+                    if (data.type === 'cashout') {
+                        tg.showAlert(`✅ Cashout အောင်မြင်သည်!\nMultiplier: ${data.multiplier}x\nအမြတ်: ${data.profit} MMK`);
+                    }
+                }
+            });
+            
+            window.socket.on('disconnect', () => {
+                console.log('Socket disconnected');
+                setTimeout(() => {
+                    window.socket.connect();
+                }, 1000);
+            });
+        }
+        
+        // ============================================
+        // BETTING FUNCTIONS
+        // ============================================
+        
+        window.setBet = function(val) {
+            document.getElementById('betAmount').value = val;
+        };
+        
+        // Start Button
+        document.getElementById('startBtn').onclick = function() {
+            const betAmount = parseFloat(document.getElementById('betAmount').value);
+            const balanceText = document.getElementById('balance').textContent.replace(/,/g, '');
+            const currentBalance = parseFloat(balanceText);
+            
+            console.log('Start clicked:', { betAmount, currentBalance, telegramId: window.telegramId });
+            
+            if (!betAmount || betAmount <= 0) {
+                tg.showAlert('❌ ငွေပမာဏ အမှန်အကန်ထည့်ပါ။');
+                return;
+            }
+            
+            if (betAmount > currentBalance) {
+                tg.showAlert('❌ လက်ကျန်ငွေ မလုံလောက်ပါ။');
+                return;
+            }
+            
+            if (!window.telegramId) {
+                tg.showAlert('❌ User ID မရှိပါ။');
+                return;
+            }
+            
+            if (!window.socket || !window.socket.connected) {
+                tg.showAlert('❌ Server နှင့် ချိတ်ဆက်မှု မရှိပါ။');
+                return;
+            }
+            
+            window.socket.emit('placeBet', {
+                userId: window.telegramId,
+                username: document.getElementById('username').textContent,
+                amount: betAmount
+            }, (response) => {
+                console.log('placeBet response:', response);
+                if (response && response.success) {
+                    document.getElementById('startBtn').style.display = 'none';
+                    document.getElementById('stopBtn').style.display = 'block';
+                    
+                    if (response.newBalance) {
+                        document.getElementById('balance').textContent = response.newBalance.toLocaleString();
+                    }
+                } else {
+                    tg.showAlert(response?.message || 'Bet လောင်းရာတွင် ပြဿနာရှိသည်။');
+                }
+            });
+        };
+        
+        // Stop Button
+        document.getElementById('stopBtn').onclick = function() {
+            if (!window.isGameRunning) {
+                tg.showAlert('❌ ဂိမ်းအလုပ်လုပ်နေချိန်မှသာ Stop နှိပ်ပါ။');
+                return;
+            }
+            
+            const multiplierText = document.getElementById('multiplier').textContent.replace('x', '');
+            const currentMultiplier = parseFloat(multiplierText);
+            
+            console.log('Stop clicked:', { currentMultiplier, telegramId: window.telegramId });
+            
+            window.socket.emit('cashOut', {
+                userId: window.telegramId,
+                multiplier: currentMultiplier
+            }, (response) => {
+                console.log('cashOut response:', response);
+                if (response && response.success) {
+                    document.getElementById('stopBtn').style.display = 'none';
+                    document.getElementById('startBtn').style.display = 'block';
+                    
+                    if (response.newBalance) {
+                        document.getElementById('balance').textContent = response.newBalance.toLocaleString();
+                    }
+                } else {
+                    tg.showAlert(response?.message || 'Cashout လုပ်ရာတွင် ပြဿနာရှိသည်။');
+                }
+            });
+        };
+        
+        // ============================================
+        // DEPOSIT FUNCTION
+        // ============================================
+        
+        window.showDepositModal = function() {
+            const amount = prompt('ငွေသွင်းမည့်ပမာဏ ထည့်ပါ (MMK):', '1000');
+            if (amount && !isNaN(amount) && parseInt(amount) > 0) {
+                const depositData = {
+                    type: 'deposit',
+                    amount: parseInt(amount),
+                    paymentMethod: 'KPay',
+                    screenshotUrl: 'manual_confirmation'
+                };
+                
+                console.log('Sending deposit data:', depositData);
+                tg.sendData(JSON.stringify(depositData));
+                tg.showAlert(`✅ ငွေသွင်းရန် တောင်းဆိုချက် (${amount} MMK) ကို ပို့လိုက်ပါပြီ။`);
+            }
+        };
+        
+        // ============================================
+        // WITHDRAW FUNCTION
+        // ============================================
+        
+        window.showWithdrawModal = function() {
+            const amount = prompt('ငွေထုတ်မည့်ပမာဏ ထည့်ပါ (MMK):', '1000');
+            if (!amount || isNaN(amount) || parseInt(amount) <= 0) return;
+            
+            const phone = prompt('KPay ဖုန်းနံပါတ် ထည့်ပါ:', '');
+            if (!phone) return;
+            
+            const name = prompt('KPay အကောင့်နာမည် ထည့်ပါ:', '');
+            if (!name) return;
+            
+            const balanceText = document.getElementById('balance').textContent.replace(/,/g, '');
+            const currentBalance = parseInt(balanceText);
+            
+            if (parseInt(amount) > currentBalance) {
+                tg.showAlert('❌ လက်ကျန်ငွေ မလုံလောက်ပါ။');
+                return;
+            }
+            
+            const withdrawData = {
+                type: 'withdraw',
+                amount: parseInt(amount),
+                accountNumber: phone,
+                accountName: name
+            };
+            
+            console.log('Sending withdraw data:', withdrawData);
+            tg.sendData(JSON.stringify(withdrawData));
+            tg.showAlert(`✅ ငွေထုတ်ရန် တောင်းဆိုချက် (${amount} MMK) ကို ပို့လိုက်ပါပြီ။`);
+        };
+        
+        // ============================================
+        // HISTORY FUNCTIONS
+        // ============================================
+        
+        function addHistoryItem(data) {
+            const historyList = document.getElementById('historyList');
+            const item = document.createElement('div');
+            item.className = 'history-item';
+            
+            const usernameClass = data.isBot ? 'bot-username' : '';
+            const stopClass = data.stop >= data.start ? 'val-win' : '';
+            const stopText = data.stop ? data.stop.toFixed(2) + 'x' : 'Wait..';
+            
+            item.innerHTML = `
+                <span class="${usernameClass}">${data.username || 'Player'}</span>
+                <span>${data.start.toFixed(2)}x</span>
+                <span class="${stopClass}">${stopText}</span>
+            `;
+            
+            historyList.insertBefore(item, historyList.firstChild);
+            
+            // Keep only last 15 items
+            while (historyList.children.length > 15) {
+                historyList.removeChild(historyList.lastChild);
+            }
+        }
+        
+        function updateActiveBets(bets) {
+            const historyList = document.getElementById('historyList');
+            
+            // Clear existing items
+            historyList.innerHTML = '';
+            
+            // Add active bets first
+            bets.forEach(bet => {
+                const item = document.createElement('div');
+                item.className = 'history-item';
+                const usernameClass = bet.isBot ? 'bot-username' : '';
+                
+                item.innerHTML = `
+                    <span class="${usernameClass}">${bet.username}</span>
+                    <span>1.00x</span>
+                    <span style="color:#666">Playing..</span>
+                `;
+                historyList.appendChild(item);
+            });
+            
+            // Add some sample history if no active bets
+            if (bets.length === 0) {
+                const sampleBots = [
+                    { username: 'U Thu Ha', isBot: true },
+                    { username: 'Kyaw Kyaw', isBot: true },
+                    { username: 'Ma Ma Lay', isBot: true }
+                ];
+                
+                sampleBots.forEach(bot => {
+                    const item = document.createElement('div');
+                    item.className = 'history-item';
+                    item.innerHTML = `
+                        <span class="bot-username">${bot.username}</span>
+                        <span>1.00x</span>
+                        <span style="color:#666">Waiting..</span>
+                    `;
+                    historyList.appendChild(item);
+                });
+            }
+        }
+        
+        // Set color scheme
+        tg.setHeaderColor('#060912');
+        tg.setBackgroundColor('#060912');
+        
+        console.log('✅ Telegram Web App initialized');
+    </script>
 </body>
 </html>

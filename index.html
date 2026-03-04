@@ -16,6 +16,7 @@
             --danger: #ff3366;
             --bg-dark: #060912;
             --card-bg: rgba(16, 20, 35, 0.95);
+            --countdown-bg: rgba(0, 0, 0, 0.8);
         }
 
         * {
@@ -44,6 +45,7 @@
             display: flex;
             flex-direction: column;
             gap: 15px;
+            position: relative;
         }
 
         /* --- HEADER SECTION --- */
@@ -96,6 +98,47 @@
 
         .action-sm.deposit { border-color: var(--success); color: var(--success); }
         .action-sm.withdraw { border-color: #ff9900; color: #ff9900; }
+
+        /* --- COUNTDOWN OVERLAY --- */
+        .countdown-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: var(--countdown-bg);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            backdrop-filter: blur(5px);
+        }
+
+        .countdown-box {
+            text-align: center;
+        }
+
+        .countdown-number {
+            font-size: 8rem;
+            font-weight: 900;
+            color: var(--primary);
+            text-shadow: 0 0 30px var(--primary);
+            animation: pulse 1s infinite;
+        }
+
+        .countdown-text {
+            font-size: 2rem;
+            color: white;
+            margin-top: 20px;
+            text-transform: uppercase;
+            letter-spacing: 5px;
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(1); opacity: 1; }
+            50% { transform: scale(1.2); opacity: 0.8; }
+            100% { transform: scale(1); opacity: 1; }
+        }
 
         /* --- MULTIPLIER SECTION --- */
         .main-display {
@@ -162,9 +205,11 @@
             border: 1px solid transparent;
             font-weight: bold;
             color: #ccc;
+            transition: all 0.2s;
         }
 
         .q-chip:hover { border-color: var(--primary); color: white; }
+        .q-chip.disabled { opacity: 0.5; pointer-events: none; }
 
         .main-actions {
             display: flex;
@@ -184,9 +229,25 @@
             letter-spacing: 2px;
         }
 
-        .btn-start { background: var(--success); color: #003311; box-shadow: 0 4px 20px rgba(0,255,136,0.4); }
-        .btn-stop { background: var(--danger); color: #fff; box-shadow: 0 4px 20px rgba(255,51,102,0.4); }
-        .btn-play:active { transform: scale(0.95); }
+        .btn-play:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .btn-start { 
+            background: var(--success); 
+            color: #003311; 
+            box-shadow: 0 4px 20px rgba(0,255,136,0.4); 
+        }
+        
+        .btn-stop { 
+            background: var(--danger); 
+            color: #fff; 
+            box-shadow: 0 4px 20px rgba(255,51,102,0.4); 
+        }
+        
+        .btn-play:active:not(:disabled) { transform: scale(0.95); }
 
         /* --- HISTORY TABLE --- */
         .history-card {
@@ -225,19 +286,113 @@
         }
 
         .val-win { color: var(--success); font-weight: bold; }
+        .val-loss { color: var(--danger); font-weight: bold; }
         .bot-username { color: #ff9900; font-style: italic; }
+
+        /* --- MODAL --- */
+        .modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.9);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 2000;
+            backdrop-filter: blur(10px);
+        }
+
+        .modal-content {
+            background: var(--card-bg);
+            width: 90%;
+            max-width: 400px;
+            border-radius: 24px;
+            padding: 30px;
+            border: 1px solid var(--primary);
+            box-shadow: 0 0 30px rgba(0,242,255,0.3);
+        }
+
+        .modal-title {
+            font-size: 1.8rem;
+            font-weight: 800;
+            color: var(--primary);
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        .modal-input {
+            width: 100%;
+            padding: 15px;
+            margin-bottom: 15px;
+            background: #000;
+            border: 1px solid #333;
+            border-radius: 12px;
+            color: white;
+            font-size: 1rem;
+            outline: none;
+        }
+
+        .modal-input:focus {
+            border-color: var(--primary);
+        }
+
+        .modal-buttons {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+        }
+
+        .modal-btn {
+            flex: 1;
+            padding: 15px;
+            border: none;
+            border-radius: 12px;
+            font-size: 1rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .modal-btn.submit {
+            background: var(--primary);
+            color: #000;
+        }
+
+        .modal-btn.cancel {
+            background: #333;
+            color: white;
+        }
+
+        .modal-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0,242,255,0.3);
+        }
+
+        .modal-btn:active {
+            transform: translateY(0);
+        }
     </style>
 </head>
 <body>
     <div class="app-shell">
+        <!-- Countdown Overlay -->
+        <div class="countdown-overlay" id="countdownOverlay">
+            <div class="countdown-box">
+                <div class="countdown-number" id="countdownNumber">3</div>
+                <div class="countdown-text" id="countdownText">GET READY</div>
+            </div>
+        </div>
+
         <header class="header">
             <div class="user-stats">
                 <div class="user-badge" id="username">TG_USERNAME</div>
                 <div class="balance-display"><span id="balance">1,000</span> <small style="font-size: 0.75rem; color: #666;">MMK</small></div>
             </div>
             <div class="nav-btns">
-                <button class="action-sm deposit" onclick="showDepositModal()">ငွေသွင်း</button>
-                <button class="action-sm withdraw" onclick="showWithdrawModal()">ငွေထုတ်</button>
+                <button class="action-sm deposit" onclick="openDepositModal()">ငွေသွင်း</button>
+                <button class="action-sm withdraw" onclick="openWithdrawModal()">ငွေထုတ်</button>
             </div>
         </header>
 
@@ -246,7 +401,7 @@
         </section>
 
         <section class="control-panel">
-            <input type="number" class="amount-input" value="1000" id="betAmount">
+            <input type="number" class="amount-input" value="1000" id="betAmount" placeholder="ငွေပမာဏ">
             
             <div class="quick-grid">
                 <div class="q-chip" onclick="setBet(500)">500</div>
@@ -256,7 +411,7 @@
             </div>
 
             <div class="main-actions">
-                <button class="btn-play btn-start" id="startBtn">START</button>
+                <button class="btn-play btn-start" id="startBtn" disabled>START</button>
                 <button class="btn-play btn-stop" id="stopBtn" style="display:none">STOP</button>
             </div>
         </section>
@@ -269,6 +424,34 @@
             </div>
             <div class="history-list" id="historyList"></div>
         </section>
+    </div>
+
+    <!-- Deposit Modal -->
+    <div class="modal" id="depositModal">
+        <div class="modal-content">
+            <div class="modal-title">💰 ငွေသွင်းရန်</div>
+            <input type="text" class="modal-input" id="depositName" placeholder="သင့်နာမည်">
+            <input type="text" class="modal-input" id="depositPhone" placeholder="ဖုန်းနံပါတ်">
+            <input type="number" class="modal-input" id="depositAmount" placeholder="ငွေပမာဏ">
+            <div class="modal-buttons">
+                <button class="modal-btn submit" onclick="submitDeposit()">အတည်ပြုမည်</button>
+                <button class="modal-btn cancel" onclick="closeDepositModal()">ဖျက်သိမ်းမည်</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Withdraw Modal -->
+    <div class="modal" id="withdrawModal">
+        <div class="modal-content">
+            <div class="modal-title">💸 ငွေထုတ်ရန်</div>
+            <input type="text" class="modal-input" id="withdrawName" placeholder="KPay အကောင့်နာမည်">
+            <input type="text" class="modal-input" id="withdrawPhone" placeholder="KPay ဖုန်းနံပါတ်">
+            <input type="number" class="modal-input" id="withdrawAmount" placeholder="ငွေပမာဏ">
+            <div class="modal-buttons">
+                <button class="modal-btn submit" onclick="submitWithdraw()">အတည်ပြုမည်</button>
+                <button class="modal-btn cancel" onclick="closeWithdrawModal()">ဖျက်သိမ်းမည်</button>
+            </div>
+        </div>
     </div>
 
     <script>
@@ -289,6 +472,8 @@
         window.telegramUser = null;
         window.socket = null;
         window.isGameRunning = false;
+        window.canBet = false;
+        window.bettingLocked = false;
         
         // Get user data from Telegram
         const user = tg.initDataUnsafe?.user;
@@ -298,7 +483,7 @@
         if (user) {
             console.log('Telegram User found:', user);
             
-            // Format username - prioritize username, then first_name, then fallback
+            // Format username
             let usernameDisplay = '';
             if (user.username) {
                 usernameDisplay = user.username;
@@ -337,7 +522,6 @@
             })
             .catch(err => {
                 console.error('Auth error:', err);
-                // Still initialize socket for testing
                 initializeSocket();
             });
         } else {
@@ -361,6 +545,21 @@
                 window.socket.emit('authenticate', { userId: window.telegramId });
             });
             
+            window.socket.on('countdown', (data) => {
+                startCountdown(data.seconds);
+                window.canBet = true;
+                window.bettingLocked = false;
+                document.getElementById('startBtn').disabled = false;
+                document.querySelectorAll('.q-chip').forEach(chip => chip.classList.remove('disabled'));
+            });
+            
+            window.socket.on('gameStart', () => {
+                window.canBet = false;
+                window.bettingLocked = true;
+                document.getElementById('startBtn').disabled = true;
+                document.querySelectorAll('.q-chip').forEach(chip => chip.classList.add('disabled'));
+            });
+            
             window.socket.on('multiplier', (data) => {
                 document.getElementById('multiplier').textContent = data.multiplier.toFixed(2) + 'x';
                 window.isGameRunning = data.gameState === 'running';
@@ -373,7 +572,6 @@
                     document.getElementById('multiplier').style.color = '';
                 }, 500);
                 
-                // Reset start button
                 document.getElementById('startBtn').style.display = 'block';
                 document.getElementById('stopBtn').style.display = 'none';
             });
@@ -409,6 +607,37 @@
         }
         
         // ============================================
+        // COUNTDOWN FUNCTION
+        // ============================================
+        
+        function startCountdown(seconds) {
+            const overlay = document.getElementById('countdownOverlay');
+            const numberEl = document.getElementById('countdownNumber');
+            const textEl = document.getElementById('countdownText');
+            
+            overlay.style.display = 'flex';
+            
+            let count = seconds;
+            numberEl.textContent = count;
+            textEl.textContent = 'GET READY';
+            
+            const interval = setInterval(() => {
+                count--;
+                if (count > 0) {
+                    numberEl.textContent = count;
+                } else if (count === 0) {
+                    numberEl.textContent = 'GO!';
+                    textEl.textContent = '';
+                } else {
+                    clearInterval(interval);
+                    setTimeout(() => {
+                        overlay.style.display = 'none';
+                    }, 500);
+                }
+            }, 1000);
+        }
+        
+        // ============================================
         // BETTING FUNCTIONS
         // ============================================
         
@@ -418,6 +647,11 @@
         
         // Start Button
         document.getElementById('startBtn').onclick = function() {
+            if (!window.canBet || window.bettingLocked) {
+                tg.showAlert('❌ ယခုအချိန်တွင် Bet လောင်း၍မရပါ။ Countdown ကိုစောင့်ပါ။');
+                return;
+            }
+            
             const betAmount = parseFloat(document.getElementById('betAmount').value);
             const balanceText = document.getElementById('balance').textContent.replace(/,/g, '');
             const currentBalance = parseFloat(balanceText);
@@ -494,57 +728,105 @@
         };
         
         // ============================================
-        // DEPOSIT FUNCTION
+        // DEPOSIT MODAL FUNCTIONS
         // ============================================
         
-        window.showDepositModal = function() {
-            const amount = prompt('ငွေသွင်းမည့်ပမာဏ ထည့်ပါ (MMK):', '1000');
-            if (amount && !isNaN(amount) && parseInt(amount) > 0) {
-                const depositData = {
-                    type: 'deposit',
-                    amount: parseInt(amount),
-                    paymentMethod: 'KPay',
-                    screenshotUrl: 'manual_confirmation'
-                };
-                
-                console.log('Sending deposit data:', depositData);
-                tg.sendData(JSON.stringify(depositData));
-                tg.showAlert(`✅ ငွေသွင်းရန် တောင်းဆိုချက် (${amount} MMK) ကို ပို့လိုက်ပါပြီ။`);
+        window.openDepositModal = function() {
+            document.getElementById('depositModal').style.display = 'flex';
+        };
+        
+        window.closeDepositModal = function() {
+            document.getElementById('depositModal').style.display = 'none';
+            // Clear inputs
+            document.getElementById('depositName').value = '';
+            document.getElementById('depositPhone').value = '';
+            document.getElementById('depositAmount').value = '';
+        };
+        
+        window.submitDeposit = function() {
+            const name = document.getElementById('depositName').value.trim();
+            const phone = document.getElementById('depositPhone').value.trim();
+            const amount = document.getElementById('depositAmount').value.trim();
+            
+            if (!name || !phone || !amount) {
+                tg.showAlert('❌ နာမည်၊ ဖုန်းနံပါတ်နှင့် ငွေပမာဏ အပြည့်အစုံထည့်ပါ။');
+                return;
             }
+            
+            if (isNaN(amount) || parseInt(amount) <= 0) {
+                tg.showAlert('❌ ငွေပမာဏ မှန်ကန်စွာထည့်ပါ။');
+                return;
+            }
+            
+            // Send to admin directly (not to group)
+            tg.sendData(JSON.stringify({
+                type: 'deposit',
+                name: name,
+                phone: phone,
+                amount: parseInt(amount),
+                userId: window.telegramId,
+                username: document.getElementById('username').textContent
+            }));
+            
+            // Close modal immediately
+            window.closeDepositModal();
+            
+            // Show confirmation
+            tg.showAlert(`✅ ငွေသွင်းရန် တောင်းဆိုချက် (${amount} MMK) ကို ပို့လိုက်ပါပြီ။ Admin အတည်ပြုပါလိမ့်မယ်။`);
         };
         
         // ============================================
-        // WITHDRAW FUNCTION
+        // WITHDRAW MODAL FUNCTIONS
         // ============================================
         
-        window.showWithdrawModal = function() {
-            const amount = prompt('ငွေထုတ်မည့်ပမာဏ ထည့်ပါ (MMK):', '1000');
-            if (!amount || isNaN(amount) || parseInt(amount) <= 0) return;
+        window.openWithdrawModal = function() {
+            document.getElementById('withdrawModal').style.display = 'flex';
+        };
+        
+        window.closeWithdrawModal = function() {
+            document.getElementById('withdrawModal').style.display = 'none';
+            // Clear inputs
+            document.getElementById('withdrawName').value = '';
+            document.getElementById('withdrawPhone').value = '';
+            document.getElementById('withdrawAmount').value = '';
+        };
+        
+        window.submitWithdraw = function() {
+            const name = document.getElementById('withdrawName').value.trim();
+            const phone = document.getElementById('withdrawPhone').value.trim();
+            const amount = document.getElementById('withdrawAmount').value.trim();
             
-            const phone = prompt('KPay ဖုန်းနံပါတ် ထည့်ပါ:', '');
-            if (!phone) return;
+            if (!name || !phone || !amount) {
+                tg.showAlert('❌ နာမည်၊ ဖုန်းနံပါတ်နှင့် ငွေပမာဏ အပြည့်အစုံထည့်ပါ။');
+                return;
+            }
             
-            const name = prompt('KPay အကောင့်နာမည် ထည့်ပါ:', '');
-            if (!name) return;
+            if (isNaN(amount) || parseInt(amount) <= 0) {
+                tg.showAlert('❌ ငွေပမာဏ မှန်ကန်စွာထည့်ပါ။');
+                return;
+            }
             
-            const balanceText = document.getElementById('balance').textContent.replace(/,/g, '');
-            const currentBalance = parseInt(balanceText);
-            
+            const currentBalance = parseInt(document.getElementById('balance').textContent.replace(/,/g, ''));
             if (parseInt(amount) > currentBalance) {
                 tg.showAlert('❌ လက်ကျန်ငွေ မလုံလောက်ပါ။');
                 return;
             }
             
-            const withdrawData = {
+            // Send to admin directly (not to group)
+            tg.sendData(JSON.stringify({
                 type: 'withdraw',
+                name: name,
+                phone: phone,
                 amount: parseInt(amount),
-                accountNumber: phone,
-                accountName: name
-            };
+                userId: window.telegramId,
+                username: document.getElementById('username').textContent
+            }));
             
-            console.log('Sending withdraw data:', withdrawData);
-            tg.sendData(JSON.stringify(withdrawData));
-            tg.showAlert(`✅ ငွေထုတ်ရန် တောင်းဆိုချက် (${amount} MMK) ကို ပို့လိုက်ပါပြီ။`);
+            // Close modal immediately
+            window.closeWithdrawModal();
+            
+            // Show confirmation
+            tg.showAlert(`✅ ငွေထုတ်ရန် တောင်းဆိုချက် (${amount} MMK) ကို ပို့လိုက်ပါပြီ။ Admin အတည်ပြုပါလိမ့်မယ်။`);
         };
         
         // ============================================
@@ -557,18 +839,29 @@
             item.className = 'history-item';
             
             const usernameClass = data.isBot ? 'bot-username' : '';
-            const stopClass = data.stop >= data.start ? 'val-win' : '';
-            const stopText = data.stop ? data.stop.toFixed(2) + 'x' : 'Wait..';
+            let resultClass = '';
+            let stopText = '';
+            
+            if (data.stop) {
+                if (data.stop > data.start) {
+                    resultClass = 'val-win';
+                    stopText = data.stop.toFixed(2) + 'x';
+                } else {
+                    resultClass = 'val-loss';
+                    stopText = 'CRASH';
+                }
+            } else {
+                stopText = 'Wait..';
+            }
             
             item.innerHTML = `
                 <span class="${usernameClass}">${data.username || 'Player'}</span>
                 <span>${data.start.toFixed(2)}x</span>
-                <span class="${stopClass}">${stopText}</span>
+                <span class="${resultClass}">${stopText}</span>
             `;
             
             historyList.insertBefore(item, historyList.firstChild);
             
-            // Keep only last 15 items
             while (historyList.children.length > 15) {
                 historyList.removeChild(historyList.lastChild);
             }
@@ -576,11 +869,8 @@
         
         function updateActiveBets(bets) {
             const historyList = document.getElementById('historyList');
-            
-            // Clear existing items
             historyList.innerHTML = '';
             
-            // Add active bets first
             bets.forEach(bet => {
                 const item = document.createElement('div');
                 item.className = 'history-item';
@@ -593,26 +883,6 @@
                 `;
                 historyList.appendChild(item);
             });
-            
-            // Add some sample history if no active bets
-            if (bets.length === 0) {
-                const sampleBots = [
-                    { username: 'U Thu Ha', isBot: true },
-                    { username: 'Kyaw Kyaw', isBot: true },
-                    { username: 'Ma Ma Lay', isBot: true }
-                ];
-                
-                sampleBots.forEach(bot => {
-                    const item = document.createElement('div');
-                    item.className = 'history-item';
-                    item.innerHTML = `
-                        <span class="bot-username">${bot.username}</span>
-                        <span>1.00x</span>
-                        <span style="color:#666">Waiting..</span>
-                    `;
-                    historyList.appendChild(item);
-                });
-            }
         }
         
         // Set color scheme

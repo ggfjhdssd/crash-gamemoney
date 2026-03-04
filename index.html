@@ -45,8 +45,10 @@
         .q-chip.disabled { opacity:0.4; pointer-events:none; }
         .main-actions { display:flex; gap:12px; }
         .btn-play { flex:1; padding:18px; border-radius:15px; border:none; font-size:1.4rem; font-weight:900; cursor:pointer; transition:0.1s; text-transform:uppercase; letter-spacing:2px; }
-        .btn-play:disabled { opacity:0.5; cursor:not-allowed; }
+        .btn-play:disabled { opacity:0.6; cursor:not-allowed; filter: grayscale(0.8); }
         .btn-start { background:var(--success); color:#003311; box-shadow:0 4px 20px rgba(0,255,136,0.4); }
+        /* Bet Placed State */
+        .btn-ready { background: #ffd700; color: #333; box-shadow: 0 4px 20px rgba(255, 215, 0, 0.4); } 
         .btn-stop { background:var(--danger); color:#fff; box-shadow:0 4px 20px rgba(255,51,102,0.4); }
         .btn-play:active:not(:disabled) { transform:scale(0.95); }
         .history-card { background:var(--card-bg); border-radius:24px; padding:18px; border:1px solid rgba(255,255,255,0.05); }
@@ -103,8 +105,7 @@
                 <div class="q-chip" onclick="setBet(10000)">10,000</div>
             </div>
             <div class="main-actions">
-                <button class="btn-play btn-start" id="startBtn" disabled>START</button>
-                <button class="btn-play btn-stop" id="stopBtn" style="display:none" disabled>STOP</button>
+                <button class="btn-play btn-start" id="actionBtn" disabled>WAITING</button>
             </div>
         </section>
 
@@ -114,7 +115,6 @@
         </section>
     </div>
 
-    <!-- Deposit Modal -->
     <div class="modal" id="depositModal">
         <div class="modal-content">
             <div class="modal-title">💰 ငွေသွင်းရန်</div>
@@ -130,7 +130,6 @@
         </div>
     </div>
 
-    <!-- Withdraw Modal -->
     <div class="modal" id="withdrawModal">
         <div class="modal-content">
             <div class="modal-title">💸 ငွေထုတ်ရန်</div>
@@ -149,9 +148,11 @@
         tg.expand(); tg.ready();
         const BACKEND_URL = 'https://crashgame-money2.onrender.com'; // Replace with your Render URL
 
-        let telegramId = null, socket = null, isGameRunning = false, canBet = false, bettingLocked = false;
-        let gameStarted = false; // true after 'GO'
-        let stopEnabled = false;
+        let telegramId = null, socket = null;
+        let myBetActive = false; // Is my bet placed and waiting?
+        let gameRunning = false; // Is the rocket flying?
+
+        const actionBtn = document.getElementById('actionBtn');
 
         const user = tg.initDataUnsafe?.user;
         if (user) {
@@ -176,92 +177,147 @@
         function initSocket() {
             socket = io(BACKEND_URL, { query: { userId: telegramId }, transports:['websocket','polling'] });
             socket.on('connect', () => socket.emit('authenticate', { userId: telegramId }));
+
+            // 1. Countdown Phase - Allow Betting immediately
             socket.on('countdown', (data) => {
-                startCountdown(data.seconds);
-                canBet = true; bettingLocked = false; gameStarted = false;
-                document.getElementById('startBtn').disabled = false;
+                gameRunning = false;
+                startCountdownUI(data.seconds);
+                
+                // Reset states
+                if (!myBetActive) {
+                    setButtonState('START'); // Enable betting
+                } else {
+                    setButtonState('READY'); // Bet placed, waiting for game start
+                }
                 document.querySelectorAll('.q-chip').forEach(c=>c.classList.remove('disabled'));
-                document.getElementById('startBtn').style.display = 'block';
-                document.getElementById('stopBtn').style.display = 'none';
-                stopEnabled = false;
             });
+
+            // 2. Game Start Phase - GO!
             socket.on('gameStart', () => {
-                canBet = false; bettingLocked = true; gameStarted = true;
-                document.getElementById('startBtn').disabled = true;
-                document.querySelectorAll('.q-chip').forEach(c=>c.classList.add('disabled'));
+                gameRunning = true;
                 document.getElementById('countdownInside').style.display = 'none';
-                if (document.getElementById('stopBtn').style.display === 'block') {
-                    document.getElementById('stopBtn').disabled = false;
-                    stopEnabled = true;
+                document.querySelectorAll('.q-chip').forEach(c=>c.classList.add('disabled'));
+
+                if (myBetActive) {
+                    // Bet placed? Now allowed to cashout
+                    setButtonState('STOP');
+                } else {
+                    // No bet? Locked out
+                    setButtonState('LOCKED');
                 }
             });
+
+            // 3. Multiplier Update
             socket.on('multiplier', (data) => {
                 document.getElementById('multiplier').textContent = data.multiplier.toFixed(2) + 'x';
-                isGameRunning = data.gameState === 'running';
             });
-            socket.on('gameCrashed', () => {
+
+            // 4. Game Crash - Show Results
+            socket.on('gameCrashed', (data) => {
+                gameRunning = false;
+                myBetActive = false;
                 document.getElementById('multiplier').style.color = 'var(--danger)';
-                setTimeout(()=> document.getElementById('multiplier').style.color = '', 500);
-                document.getElementById('startBtn').style.display = 'block';
-                document.getElementById('stopBtn').style.display = 'none';
-                stopEnabled = false;
+                
+                // Force update UI for crash
+                document.querySelectorAll('.playing-status').forEach(el => {
+                    el.textContent = 'CRASH';
+                    el.className = 'val-loss';
+                });
+
+                setTimeout(()=> document.getElementById('multiplier').style.color = '', 1000);
+                setButtonState('WAITING');
             });
+
             socket.on('balanceUpdate', (d) => { if(d.userId===telegramId) document.getElementById('balance').textContent = d.balance.toLocaleString(); });
+            
+            // Handle lists
             socket.on('activeBets', (d) => updateActiveBets(d.bets));
             socket.on('newHistory', addHistoryItem);
-            socket.on('betResult', (d) => { if(d.success && d.type==='cashout') tg.showAlert(`✅ Cashout အောင်မြင်သည်!\nMultiplier: ${d.multiplier}x\nအမြတ်: ${d.profit} MMK`); });
+            
+            socket.on('betResult', (d) => { 
+                if(d.success && d.type==='cashout') {
+                    tg.showAlert(`✅ Cashout အောင်မြင်သည်!\nMultiplier: ${d.multiplier}x\nအမြတ်: ${d.profit} MMK`);
+                    myBetActive = false;
+                    setButtonState('LOCKED'); // Done for this round
+                }
+            });
             socket.on('disconnect', () => setTimeout(()=>socket.connect(),1000));
         }
 
-        function startCountdown(sec) {
+        // Button Logic
+        function setButtonState(state) {
+            actionBtn.className = 'btn-play'; // Reset classes
+            switch(state) {
+                case 'START':
+                    actionBtn.textContent = 'START';
+                    actionBtn.classList.add('btn-start');
+                    actionBtn.disabled = false;
+                    actionBtn.onclick = placeBet;
+                    break;
+                case 'READY':
+                    actionBtn.textContent = 'BET PLACED';
+                    actionBtn.classList.add('btn-ready');
+                    actionBtn.disabled = true; // Wait for GO
+                    break;
+                case 'STOP':
+                    actionBtn.textContent = 'STOP';
+                    actionBtn.classList.add('btn-stop');
+                    actionBtn.disabled = false;
+                    actionBtn.onclick = cashOut;
+                    break;
+                case 'LOCKED':
+                    actionBtn.textContent = 'PLAYING...';
+                    actionBtn.disabled = true;
+                    break;
+                case 'WAITING':
+                    actionBtn.textContent = 'WAITING';
+                    actionBtn.disabled = true;
+                    break;
+            }
+        }
+
+        // Start Countdown UI
+        function startCountdownUI(sec) {
             const cont = document.getElementById('countdownInside');
             const num = document.getElementById('countdownNumber');
             const txt = document.getElementById('countdownText');
             cont.style.display = 'flex';
-            let cnt = sec;
-            num.textContent = cnt;
+            num.textContent = sec;
             txt.textContent = 'GET READY';
-            const iv = setInterval(()=>{
-                cnt--;
-                if(cnt>0) num.textContent = cnt;
-                else if(cnt===0) { num.textContent = 'GO!'; txt.textContent = ''; }
-                else { clearInterval(iv); setTimeout(()=>{ cont.style.display = 'none'; },500); }
-            },1000);
+            // Visual only, logic handled by socket
         }
 
         window.setBet = (v) => document.getElementById('betAmount').value = v;
 
-        document.getElementById('startBtn').onclick = () => {
-            if (!canBet || bettingLocked) { tg.showAlert('❌ ယခုအချိန်တွင် Bet မလောင်းနိုင်ပါ။'); return; }
+        // Place Bet Action
+        function placeBet() {
             const bet = parseFloat(document.getElementById('betAmount').value);
             const bal = parseFloat(document.getElementById('balance').textContent.replace(/,/g,''));
             if(!bet||bet<=0) { tg.showAlert('❌ ငွေပမာဏထည့်ပါ။'); return; }
             if(bet>bal) { tg.showAlert('❌ လက်ကျန်မလုံလောက်'); return; }
-            if(!telegramId||!socket?.connected) { tg.showAlert('❌ ချိတ်ဆက်မှုမရှိ'); return; }
+            
             socket.emit('placeBet', { userId:telegramId, username:document.getElementById('username').textContent, amount:bet }, (res)=>{
                 if(res?.success) {
-                    document.getElementById('startBtn').style.display = 'none';
-                    document.getElementById('stopBtn').style.display = 'block';
-                    document.getElementById('stopBtn').disabled = true;
-                    stopEnabled = false;
+                    myBetActive = true;
+                    setButtonState('READY'); // Button turns yellow, waiting for game start
                     if(res.newBalance) document.getElementById('balance').textContent = res.newBalance.toLocaleString();
                 } else tg.showAlert(res?.message||'Bet မအောင်မြင်');
             });
-        };
+        }
 
-        document.getElementById('stopBtn').onclick = () => {
-            if (!gameStarted || !isGameRunning) { tg.showAlert('❌ ဂိမ်းစပြီးမှသာ Stop နှိပ်ပါ။'); return; }
+        // Cash Out Action
+        function cashOut() {
+            if (!gameRunning) return;
             const mult = parseFloat(document.getElementById('multiplier').textContent.replace('x',''));
             socket.emit('cashOut', { userId:telegramId, multiplier:mult }, (res)=>{
                 if(res?.success) {
-                    document.getElementById('stopBtn').style.display = 'none';
-                    document.getElementById('startBtn').style.display = 'block';
                     if(res.newBalance) document.getElementById('balance').textContent = res.newBalance.toLocaleString();
                 } else tg.showAlert(res?.message||'Cashout မအောင်မြင်');
             });
-        };
+        }
 
-        // Deposit
+        // --- Deposit / Withdraw Logic ---
+
         window.openDepositModal = () => document.getElementById('depositModal').style.display = 'flex';
         window.closeDepositModal = () => {
             document.getElementById('depositModal').style.display = 'none';
@@ -273,64 +329,93 @@
             const amount = parseInt(document.getElementById('depositAmount').value.trim());
             if(!name||!phone||!amount) { tg.showAlert('❌ အချက်အလက်အပြည့်ထည့်ပါ။'); return; }
             if(amount<3000) { tg.showAlert('❌ အနည်းဆုံး 3000 MMK ဖြစ်ရမည်။'); return; }
+            
             try {
                 const r = await fetch(`${BACKEND_URL}/api/deposit`, {
                     method:'POST', headers:{'Content-Type':'application/json'},
                     body: JSON.stringify({ userId:telegramId, username:document.getElementById('username').textContent, name, phone, amount })
                 });
                 const d = await r.json();
-                if(d.success) tg.showAlert(`✅ ငွေသွင်းတောင်းဆိုချက် (${amount} MMK) ပို့ပြီးပါပြီ။ Admin အတည်ပြုပါလိမ့်မယ်။`);
-                else tg.showAlert('❌ '+ (d.message||'ငွေသွင်းရာတွင်ပြဿနာ'));
-            } catch(e) { tg.showAlert('❌ Server ချိတ်ဆက်မရ'); }
+                if(d.success) tg.showAlert(`✅ ငွေသွင်းတောင်းဆိုချက် ပို့ပြီးပါပြီ။`);
+                else tg.showAlert('❌ '+ (d.message));
+            } catch(e) { tg.showAlert('❌ Server Error'); }
             closeDepositModal();
         };
 
-        // Withdraw
         window.openWithdrawModal = () => document.getElementById('withdrawModal').style.display = 'flex';
         window.closeWithdrawModal = () => {
             document.getElementById('withdrawModal').style.display = 'none';
             ['withdrawName','withdrawPhone','withdrawAmount'].forEach(id=>document.getElementById(id).value='');
         };
+        
+        // Revised Withdraw - Updates balance immediately on UI
         window.submitWithdraw = async () => {
             const name = document.getElementById('withdrawName').value.trim();
             const phone = document.getElementById('withdrawPhone').value.trim();
             const amount = parseInt(document.getElementById('withdrawAmount').value.trim());
             if(!name||!phone||!amount) { tg.showAlert('❌ အချက်အလက်အပြည့်ထည့်ပါ။'); return; }
-            const curBal = parseInt(document.getElementById('balance').textContent.replace(/,/g,''));
+            
+            const curBalElement = document.getElementById('balance');
+            const curBal = parseInt(curBalElement.textContent.replace(/,/g,''));
+
             if(amount>curBal) { tg.showAlert('❌ လက်ကျန်မလုံလောက်'); return; }
+            
             try {
                 const r = await fetch(`${BACKEND_URL}/api/withdraw`, {
                     method:'POST', headers:{'Content-Type':'application/json'},
                     body: JSON.stringify({ userId:telegramId, username:document.getElementById('username').textContent, name, phone, amount })
                 });
                 const d = await r.json();
-                if(d.success) tg.showAlert(`✅ ငွေထုတ်တောင်းဆိုချက် (${amount} MMK) ပို့ပြီးပါပြီ။ Admin အတည်ပြုပါလိမ့်မယ်။`);
-                else tg.showAlert('❌ '+ (d.message||'ငွေထုတ်ရာတွင်ပြဿနာ'));
-            } catch(e) { tg.showAlert('❌ Server ချိတ်ဆက်မရ'); }
+                if(d.success) {
+                    // Update UI immediately based on server response containing new balance
+                    if(d.newBalance !== undefined) {
+                        curBalElement.textContent = d.newBalance.toLocaleString();
+                    }
+                    tg.showAlert(`✅ ငွေထုတ်တောင်းဆိုပြီးပါပြီ။`);
+                }
+                else tg.showAlert('❌ '+ (d.message));
+            } catch(e) { tg.showAlert('❌ Server Error'); }
             closeWithdrawModal();
         };
 
         function addHistoryItem(d) {
+            // Remove the active bet entry for this user if exists
+            // Actually, we just prepend the new history item
             const list = document.getElementById('historyList');
             const it = document.createElement('div'); it.className='history-item';
             const uclass = d.isBot?'bot-username':'';
             let rclass='', stoptxt='';
-            if(d.stop) {
-                if(d.stop>d.start) { rclass='val-win'; stoptxt=d.stop.toFixed(2)+'x'; }
-                else { rclass='val-loss'; stoptxt='CRASH'; }
-            } else stoptxt='Wait..';
-            it.innerHTML = `<span class="${uclass}">${d.username||'Player'}</span><span>${d.start.toFixed(2)}x</span><span class="${rclass}">${stoptxt}</span>`;
+            if(d.profit > 0) { rclass='val-win'; stoptxt=d.stop.toFixed(2)+'x'; }
+            else { rclass='val-loss'; stoptxt='CRASH'; }
+            
+            it.innerHTML = `<span class="${uclass}">${d.username||'Player'}</span><span>${d.start?d.start.toFixed(2):'1.00'}x</span><span class="${rclass}">${stoptxt}</span>`;
+            
+            // Try to replace existing playing row if exists, else prepend
+            // For simplicity, we just rebuild list usually, but here we prepend
             list.insertBefore(it, list.firstChild);
-            while(list.children.length>15) list.removeChild(list.lastChild);
+            while(list.children.length>20) list.removeChild(list.lastChild);
         }
 
         function updateActiveBets(bets) {
+            // Only show active bets if game is waiting or running
+            // If crashed, the crash event handles the UI
             const list = document.getElementById('historyList');
-            list.innerHTML = '';
+            // We want to keep history, but show playing users at top? 
+            // Better strategy: Use a separate "Playing Now" list or just clear/rebuild.
+            // For this UI, let's just clear list on new game start, or append Playing..
+            
+            // To make it simple: We clear list on start? No, we want history.
+            // Let's just prepend playing users.
+            
+            // Remove any existing "Playing.." rows first
+            const playingRows = document.querySelectorAll('.playing-row');
+            playingRows.forEach(r => r.remove());
+
             bets.forEach(b=>{
-                const it = document.createElement('div'); it.className='history-item';
-                it.innerHTML = `<span class="${b.isBot?'bot-username':''}">${b.username}</span><span>1.00x</span><span style="color:#666">Playing..</span>`;
-                list.appendChild(it);
+                const it = document.createElement('div'); 
+                it.className='history-item playing-row'; // Marker class
+                it.innerHTML = `<span class="${b.isBot?'bot-username':''}">${b.username}</span><span>1.00x</span><span class="playing-status" style="color:#fff">Playing..</span>`;
+                list.insertBefore(it, list.firstChild);
             });
         }
 

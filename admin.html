@@ -45,7 +45,6 @@
             <button class="tab" onclick="showTab('transactions')">ငွေသွင်း/ထုတ်တောင်းဆိုချက်များ</button>
         </div>
 
-        <!-- Users Section -->
         <div id="usersSection" class="section active">
             <h2>အသုံးပြုသူများ</h2>
             <table>
@@ -56,7 +55,6 @@
             </table>
         </div>
 
-        <!-- Transactions Section -->
         <div id="transactionsSection" class="section">
             <h2>ငွေသွင်း/ထုတ်တောင်းဆိုချက်များ</h2>
             <table>
@@ -122,7 +120,7 @@
     <script>
         const tg = window.Telegram.WebApp;
         tg.expand();
-        const BACKEND_URL = 'https://crashgame-money2.onrender.com'; // Replace with your Render URL
+        const BACKEND_URL = 'https://crashgame-money2.onrender.com';
         let adminId = null;
 
         const user = tg.initDataUnsafe?.user;
@@ -194,7 +192,6 @@
             }
         }
 
-        // Balance Modal
         function openBalanceModal(userId, currentBal) {
             document.getElementById('balanceUserId').value = userId;
             document.getElementById('currentBalance').innerText = currentBal;
@@ -223,7 +220,6 @@
             }
         }
 
-        // Ban Modal
         function openBanModal(userId, display, isBanned) {
             document.getElementById('banUserId').value = userId;
             document.getElementById('banUserDisplay').innerText = display + (isBanned ? ' (ပိတ်ထားဆဲ)' : '');
@@ -250,7 +246,6 @@
             }
         }
 
-        // Transaction Modal
         function openTxModal(txId, type, amount, username) {
             document.getElementById('txId').value = txId;
             document.getElementById('txDetails').innerText = `${type === 'deposit' ? 'ငွေသွင်း' : 'ငွေထုတ်'} - ${amount} MMK (${username})`;

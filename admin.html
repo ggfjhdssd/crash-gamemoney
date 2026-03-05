@@ -67,6 +67,15 @@
     </style>
 </head>
 <body>
+<!-- Loading screen while checking admin access -->
+<div id="loadingScreen" style="display:flex;align-items:center;justify-content:center;height:100vh;flex-direction:column;gap:16px;background:#0a0c15;">
+    <div style="width:48px;height:48px;border:3px solid #1e2333;border-top-color:#00f2ff;border-radius:50%;animation:spin 0.8s linear infinite;"></div>
+    <p style="color:#555;font-size:.9rem;">Admin စစ်ဆေးနေသည်...</p>
+</div>
+<style>@keyframes spin{to{transform:rotate(360deg)}}</style>
+
+<!-- Admin Panel (hidden until auth passes) -->
+<div id="adminPanel" style="display:none;">
 <div class="container">
     <h1>🎮 Crash Game — Admin Panel</h1>
     <p class="subtitle">God Mode — Full Control</p>
@@ -219,19 +228,63 @@
     </div>
 </div>
 
+</div><!-- /adminPanel -->
+
 <script>
 const tg = window.Telegram.WebApp;
 tg.expand();
+tg.ready();
+tg.setHeaderColor('#0a0c15');
+tg.setBackgroundColor('#0a0c15');
+
 const BACKEND = 'https://crashgame-money2.onrender.com';
 let adminId = null;
 let allUsers = [];
 
-const user = tg.initDataUnsafe?.user;
-if (user) {
-    adminId = user.id.toString();
-    init();
+// ── Telegram Mini App မှ User ID ယူပြီး Admin စစ်ဆေး ──────────────────────────
+const tgUser = tg.initDataUnsafe?.user;
+
+if (!tgUser) {
+    // Telegram မှမဖွင့်ရင် error ပြ
+    document.body.innerHTML = `
+        <div style="display:flex;align-items:center;justify-content:center;height:100vh;flex-direction:column;gap:16px;background:#0a0c15;padding:20px;text-align:center;">
+            <div style="font-size:3rem;">⛔</div>
+            <h2 style="color:#ff3366;font-size:1.2rem;">Telegram မှသာ ဝင်ရောက်နိုင်သည်</h2>
+            <p style="color:#555;font-size:.85rem;">Bot မှ /admin command သုံးပြီး Admin Panel ကိုဖွင့်ပါ။</p>
+        </div>`;
 } else {
-    document.body.innerHTML = '<h2 style="color:#ff3366;padding:20px;">Telegram မှသာဝင်ရောက်ခွင့်ရှိသည်။</h2>';
+    adminId = String(tgUser.id);
+    // Admin ID စစ်ဆေးရန် backend ကိုခေါ်
+    checkAdminAccess(adminId);
+}
+
+async function checkAdminAccess(id) {
+    try {
+        const r = await fetch(`${BACKEND}/api/admin/check`, {
+            headers: { 'x-telegram-id': id }
+        });
+        const d = await r.json();
+        if (d.isAdmin) {
+            // Admin ဆိုရင် panel ပြ
+            document.getElementById('loadingScreen').style.display = 'none';
+            document.getElementById('adminPanel').style.display    = 'block';
+            init();
+        } else {
+            document.body.innerHTML = `
+                <div style="display:flex;align-items:center;justify-content:center;height:100vh;flex-direction:column;gap:16px;background:#0a0c15;padding:20px;text-align:center;">
+                    <div style="font-size:3rem;">🚫</div>
+                    <h2 style="color:#ff3366;font-size:1.2rem;">Admin Access မရှိပါ</h2>
+                    <p style="color:#555;font-size:.85rem;">ID: ${id}</p>
+                </div>`;
+        }
+    } catch {
+        document.body.innerHTML = `
+            <div style="display:flex;align-items:center;justify-content:center;height:100vh;flex-direction:column;gap:16px;background:#0a0c15;padding:20px;text-align:center;">
+                <div style="font-size:3rem;">❌</div>
+                <h2 style="color:#ff9900;font-size:1.2rem;">Server ချိတ်ဆက်မရ</h2>
+                <button onclick="location.reload()" style="padding:10px 20px;background:#00f2ff;color:#000;border:none;border-radius:8px;font-weight:700;cursor:pointer;margin-top:8px;">🔄 ပြန်စမ်းမည်</button>
+            </div>`;
+    }
 }
 
 async function init() {

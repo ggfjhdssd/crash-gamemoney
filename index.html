@@ -7,7 +7,6 @@
   <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
   <style>
-    /* ── Design tokens ───────────────────────────────────── */
     :root {
       --primary:   #00f2ff;
       --secondary: #7000ff;
@@ -21,373 +20,192 @@
       --muted:     #8a8f9e;
       --divider:   #2a2f3f;
     }
-
-    /* ── Reset ───────────────────────────────────────────── */
     *, *::before, *::after { margin:0; padding:0; box-sizing:border-box; }
     body {
       font-family: 'Inter', system-ui, sans-serif;
-      background: var(--bg);
-      color: #fff;
-      display: flex;
-      justify-content: center;
-      min-height: 100vh;
-      overscroll-behavior: none;
+      background: var(--bg); color: #fff;
+      display: flex; justify-content: center;
+      min-height: 100vh; overscroll-behavior: none;
     }
+    .shell { width:100%; max-width:480px; padding:14px; display:flex; flex-direction:column; gap:14px; }
 
-    /* ── Layout ──────────────────────────────────────────── */
-    .shell {
-      width: 100%;
-      max-width: 480px;
-      padding: 14px;
-      display: flex;
-      flex-direction: column;
-      gap: 14px;
-    }
-
-    /* ── Header ──────────────────────────────────────────── */
-    .header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      padding: 8px 0;
-    }
-    .user-info { display: flex; flex-direction: column; gap: 4px; }
+    /* ── Header ── */
+    .header { display:flex; justify-content:space-between; align-items:center; padding:8px 0; }
+    .user-info { display:flex; flex-direction:column; gap:4px; }
     .badge {
       background: linear-gradient(90deg, var(--secondary), transparent);
-      padding: 3px 12px;
-      border-radius: 4px;
-      font-size: .82rem;
-      font-weight: 700;
-      border-left: 3px solid var(--primary);
-      max-width: 180px;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      white-space: nowrap;
+      padding:3px 12px; border-radius:4px; font-size:.82rem; font-weight:700;
+      border-left:3px solid var(--primary);
+      max-width:180px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
     }
-    .balance-wrap {
-      font-size: 1.45rem;
-      font-weight: 800;
-      color: var(--primary);
-      text-shadow: 0 0 10px rgba(0,242,255,.45);
-    }
-    .balance-wrap small { font-size: .72rem; color: var(--muted); }
-    .nav { display: flex; gap: 8px; }
+    .balance-wrap { font-size:1.45rem; font-weight:800; color:var(--primary); text-shadow:0 0 10px rgba(0,242,255,.45); }
+    .balance-wrap small { font-size:.72rem; color:var(--muted); }
+    .nav { display:flex; gap:8px; }
     .nav-btn {
-      padding: 8px 12px;
-      border-radius: 8px;
-      border: 1px solid rgba(255,255,255,.1);
-      background: rgba(255,255,255,.05);
-      color: #fff;
-      font-size: .78rem;
-      font-weight: 600;
-      cursor: pointer;
-      transition: opacity .15s;
+      padding:8px 12px; border-radius:8px; border:1px solid rgba(255,255,255,.1);
+      background:rgba(255,255,255,.05); color:#fff; font-size:.78rem; font-weight:600;
+      cursor:pointer; transition:opacity .15s;
     }
-    .nav-btn:active { opacity: .7; }
-    .nav-btn.dep  { border-color: var(--success); color: var(--success); }
-    .nav-btn.with { border-color: var(--orange);  color: var(--orange);  }
+    .nav-btn:active { opacity:.7; }
+    .nav-btn.dep  { border-color:var(--success); color:var(--success); }
+    .nav-btn.with { border-color:var(--orange);  color:var(--orange);  }
 
-    /* ── Game display ────────────────────────────────────── */
+    /* ── Game display ── */
     .game-display {
-      position: relative;
-      height: 200px;
-      border-radius: 24px;
-      background: var(--card);
-      border: 1px solid var(--border);
-      box-shadow: 0 10px 30px rgba(0,0,0,.5);
-      overflow: hidden;
-      display: flex;
-      align-items: center;
-      justify-content: center;
+      position:relative; height:200px; border-radius:24px;
+      background:var(--card); border:1px solid var(--border);
+      box-shadow:0 10px 30px rgba(0,0,0,.5);
+      overflow:hidden; display:flex; align-items:center; justify-content:center;
     }
-    /* Crash point history bar */
     .crash-bar {
-      position: absolute;
-      top: 10px;
-      left: 10px;
-      right: 10px;
-      display: flex;
-      gap: 6px;
-      z-index: 5;
-      overflow: hidden;
+      position:absolute; top:10px; left:10px; right:10px;
+      display:flex; gap:6px; z-index:5; overflow:hidden;
     }
     .crash-pill {
-      padding: 3px 8px;
-      border-radius: 20px;
-      font-size: .7rem;
-      font-weight: 700;
-      background: rgba(0,0,0,.55);
-      border: 1px solid rgba(255,255,255,.1);
-      white-space: nowrap;
-      flex-shrink: 0;
+      padding:3px 8px; border-radius:20px; font-size:.7rem; font-weight:700;
+      background:rgba(0,0,0,.55); border:1px solid rgba(255,255,255,.1);
+      white-space:nowrap; flex-shrink:0;
     }
-    .crash-pill.high { color: var(--success); }
-    .crash-pill.mid  { color: var(--orange);  }
-    .crash-pill.low  { color: var(--danger);  }
+    .crash-pill.high { color:var(--success); }
+    .crash-pill.mid  { color:var(--orange);  }
+    .crash-pill.low  { color:var(--danger);  }
 
+    /* ── Multiplier — CSS transition for smoothness ── */
     .mult-val {
-      font-size: 5.5rem;
-      font-weight: 900;
-      letter-spacing: -2px;
-      z-index: 2;
-      background: linear-gradient(to bottom, #fff, #999);
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-      filter: drop-shadow(0 0 20px rgba(0,242,255,.5));
-      transition: -webkit-text-fill-color .15s;
-      will-change: contents; /* hint browser — text changes frequently */
+      font-size:5.5rem; font-weight:900; letter-spacing:-2px; z-index:2;
+      background:linear-gradient(to bottom,#fff,#999);
+      -webkit-background-clip:text; -webkit-text-fill-color:transparent;
+      filter:drop-shadow(0 0 20px rgba(0,242,255,.5));
+      /* ★ CSS transition for smooth number changes */
+      transition: filter .1s ease-out;
+      will-change: contents;
     }
     .mult-val.crashed {
       -webkit-text-fill-color: var(--danger) !important;
-      filter: drop-shadow(0 0 20px rgba(255,51,102,.6));
+      filter:drop-shadow(0 0 20px rgba(255,51,102,.6));
+    }
+    .mult-val.demo {
+      /* Idle demo mode — slightly dimmed/different to hint it's not real */
+      -webkit-text-fill-color:rgba(255,255,255,0.45) !important;
+      filter:drop-shadow(0 0 12px rgba(0,242,255,.25));
+    }
+    .mult-val.visual {
+      /* FOMO visual continuation phase — gold tint */
+      -webkit-text-fill-color:var(--gold) !important;
+      filter:drop-shadow(0 0 22px rgba(255,215,0,.55));
     }
 
-    /* ── Countdown overlay ───────────────────────────────── */
+    /* ── Demo badge ── */
+    .demo-badge {
+      position:absolute; bottom:14px; left:50%; transform:translateX(-50%);
+      background:rgba(0,0,0,.6); border:1px solid var(--primary);
+      padding:3px 14px; border-radius:20px; font-size:.72rem; font-weight:700;
+      color:var(--primary); letter-spacing:1px; z-index:6;
+      opacity:0; transition:opacity .3s;
+      pointer-events:none;
+    }
+    .demo-badge.visible { opacity:1; }
+
+    /* ── FOMO label shown after user cashes out ── */
+    .fomo-label {
+      position:absolute; top:50%; left:50%; transform:translate(-50%,-50%);
+      font-size:.8rem; font-weight:700; color:var(--gold);
+      letter-spacing:1px; text-align:center; line-height:1.4; z-index:8;
+      opacity:0; transition:opacity .4s; pointer-events:none;
+      text-shadow:0 0 10px rgba(255,215,0,.6);
+    }
+    .fomo-label.visible { opacity:1; }
+
+    /* ── Countdown overlay ── */
     .cd-overlay {
-      position: absolute;
-      inset: 0;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      background: rgba(0,0,0,.35);
-      backdrop-filter: blur(3px);
-      border-radius: 24px;
-      z-index: 10;
-      pointer-events: none;
-      opacity: 0;
-      transition: opacity .25s;
+      position:absolute; inset:0; display:flex; align-items:center; justify-content:center;
+      background:rgba(0,0,0,.35); backdrop-filter:blur(3px); border-radius:24px;
+      z-index:10; pointer-events:none; opacity:0; transition:opacity .25s;
     }
-    .cd-overlay.visible { opacity: 1; }
+    .cd-overlay.visible { opacity:1; }
     .cd-ring {
-      width: 120px; height: 120px;
-      border-radius: 50%;
-      background: rgba(0,242,255,.12);
-      border: 3px solid var(--primary);
-      display: flex; align-items: center; justify-content: center;
-      box-shadow: 0 0 30px var(--primary);
-      animation: glow 1s infinite alternate;
+      width:120px; height:120px; border-radius:50%;
+      background:rgba(0,242,255,.12); border:3px solid var(--primary);
+      display:flex; align-items:center; justify-content:center;
+      box-shadow:0 0 30px var(--primary); animation:glow 1s infinite alternate;
     }
-    .cd-num {
-      font-size: 4rem;
-      font-weight: 900;
-      color: #fff;
-      text-shadow: 0 0 20px var(--primary);
-    }
-    .cd-label {
-      font-size: 1.4rem;
-      font-weight: 600;
-      text-transform: uppercase;
-      letter-spacing: 2px;
-      margin-left: 16px;
-    }
+    .cd-num { font-size:4rem; font-weight:900; color:#fff; text-shadow:0 0 20px var(--primary); }
+    .cd-label { font-size:1.4rem; font-weight:600; text-transform:uppercase; letter-spacing:2px; margin-left:16px; }
     @keyframes glow {
-      from { box-shadow: 0 0 20px var(--primary); }
-      to   { box-shadow: 0 0 45px var(--primary); }
+      from { box-shadow:0 0 20px var(--primary); }
+      to   { box-shadow:0 0 45px var(--primary); }
     }
 
-    /* ── Control panel ───────────────────────────────────── */
+    /* ── Panel ── */
     .panel {
-      background: var(--card);
-      padding: 18px;
-      border-radius: 24px;
-      display: flex;
-      flex-direction: column;
-      gap: 14px;
-      border: 1px solid var(--border);
+      background:var(--card); padding:18px; border-radius:24px;
+      display:flex; flex-direction:column; gap:14px; border:1px solid var(--border);
     }
     .amount-in {
-      width: 100%;
-      background: #0b0e17;
-      border: 1px solid var(--divider);
-      border-radius: 12px;
-      padding: 14px;
-      color: #fff;
-      font-size: 1.25rem;
-      font-weight: 700;
-      text-align: center;
-      outline: none;
-      transition: border-color .15s;
+      width:100%; background:#0b0e17; border:1px solid var(--divider); border-radius:12px;
+      padding:14px; color:#fff; font-size:1.25rem; font-weight:700; text-align:center;
+      outline:none; transition:border-color .15s;
     }
-    .amount-in:focus { border-color: var(--primary); }
-    .chips {
-      display: grid;
-      grid-template-columns: repeat(4, 1fr);
-      gap: 8px;
-    }
+    .amount-in:focus { border-color:var(--primary); }
+    .chips { display:grid; grid-template-columns:repeat(4,1fr); gap:8px; }
     .chip {
-      background: #1e2333;
-      padding: 11px 4px;
-      border-radius: 8px;
-      font-size: .88rem;
-      text-align: center;
-      cursor: pointer;
-      border: 1px solid transparent;
-      font-weight: 600;
-      color: #ccc;
-      transition: border-color .15s, color .15s, background .15s;
-      user-select: none;
+      background:#1e2333; padding:11px 4px; border-radius:8px; font-size:.88rem;
+      text-align:center; cursor:pointer; border:1px solid transparent; font-weight:600;
+      color:#ccc; transition:border-color .15s,color .15s,background .15s; user-select:none;
     }
-    .chip:hover  { border-color: var(--primary); color: #fff; background: #2a3042; }
-    .chip.locked { opacity: .35; pointer-events: none; }
+    .chip:hover  { border-color:var(--primary); color:#fff; background:#2a3042; }
+    .chip.locked { opacity:.35; pointer-events:none; }
 
-    /* ── Main action button ──────────────────────────────── */
+    /* ── Button ── */
     .main-btn {
-      width: 100%;
-      padding: 18px;
-      border-radius: 15px;
-      border: none;
-      font-size: 1.2rem;
-      font-weight: 900;
-      cursor: pointer;
-      letter-spacing: 1px;
-      text-transform: uppercase;
-      transition: transform .08s, opacity .15s, background .2s;
-      will-change: transform;
+      width:100%; padding:18px; border-radius:15px; border:none;
+      font-size:1.2rem; font-weight:900; cursor:pointer; letter-spacing:1px;
+      text-transform:uppercase;
+      transition:transform .08s, opacity .15s, background .2s, box-shadow .2s;
+      will-change:transform;
     }
-    .main-btn:active:not(:disabled) { transform: scale(.96); }
-    .main-btn:disabled { opacity: .5; cursor: not-allowed; }
+    .main-btn:active:not(:disabled) { transform:scale(.96); }
+    .main-btn:disabled { opacity:.5; cursor:not-allowed; }
+    .main-btn.mode-start    { background:var(--success); color:#003311; box-shadow:0 4px 20px rgba(0,255,136,.4); }
+    .main-btn.mode-stop-wait{ background:#883355; color:#ffd; }
+    .main-btn.mode-stop     { background:var(--danger); color:#fff; box-shadow:0 4px 20px rgba(255,51,102,.45); }
+    .main-btn.mode-win      { background:linear-gradient(135deg,var(--gold),var(--orange)); color:#000; font-size:1rem; box-shadow:0 4px 20px rgba(255,215,0,.45); }
+    .main-btn.mode-idle     { background:#1e2333; color:var(--muted); }
 
-    .main-btn.mode-start {
-      background: var(--success);
-      color: #003311;
-      box-shadow: 0 4px 20px rgba(0,255,136,.4);
-    }
-    .main-btn.mode-stop-wait {
-      background: #883355;
-      color: #ffd;
-      box-shadow: none;
-    }
-    .main-btn.mode-stop {
-      background: var(--danger);
-      color: #fff;
-      box-shadow: 0 4px 20px rgba(255,51,102,.45);
-    }
-    .main-btn.mode-win {
-      background: linear-gradient(135deg, var(--gold), var(--orange));
-      color: #000;
-      font-size: 1rem;
-      box-shadow: 0 4px 20px rgba(255,215,0,.45);
-    }
-    .main-btn.mode-idle {
-      background: #1e2333;
-      color: var(--muted);
-    }
+    /* ── History ── */
+    .hist-card { background:var(--card); border-radius:24px; padding:16px; border:1px solid var(--border); }
+    .hist-head { display:grid; grid-template-columns:2fr 1fr 1fr; padding-bottom:10px; border-bottom:1px solid var(--divider); font-size:.77rem; color:var(--muted); text-transform:uppercase; font-weight:700; }
+    .hist-body { margin-top:8px; display:flex; flex-direction:column; max-height:210px; overflow-y:auto; scrollbar-width:thin; }
+    .hist-row { display:grid; grid-template-columns:2fr 1fr 1fr; font-size:.88rem; padding:9px 0; border-bottom:1px solid rgba(255,255,255,.03); font-weight:500; }
+    .hist-row .name { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+    .hist-row .name.bot { color:var(--orange); font-style:italic; }
+    .c-win   { color:var(--success); font-weight:700; }
+    .c-crash { color:var(--danger);  font-weight:800; letter-spacing:.5px; }
+    .c-play  { color:#555; }
 
-    /* ── History table ───────────────────────────────────── */
-    .hist-card {
-      background: var(--card);
-      border-radius: 24px;
-      padding: 16px;
-      border: 1px solid var(--border);
-    }
-    .hist-head {
-      display: grid;
-      grid-template-columns: 2fr 1fr 1fr;
-      padding-bottom: 10px;
-      border-bottom: 1px solid var(--divider);
-      font-size: .77rem;
-      color: var(--muted);
-      text-transform: uppercase;
-      font-weight: 700;
-    }
-    .hist-body {
-      margin-top: 8px;
-      display: flex;
-      flex-direction: column;
-      max-height: 210px;
-      overflow-y: auto;
-      scrollbar-width: thin;
-    }
-    .hist-row {
-      display: grid;
-      grid-template-columns: 2fr 1fr 1fr;
-      font-size: .88rem;
-      padding: 9px 0;
-      border-bottom: 1px solid rgba(255,255,255,.03);
-      font-weight: 500;
-      /* GPU-composited transition for status color change */
-      transition: color .2s;
-    }
-    .hist-row .name  { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-    .hist-row .name.bot { color: var(--orange); font-style: italic; }
-    .c-win   { color: var(--success); font-weight: 700; }
-    .c-crash { color: var(--danger);  font-weight: 800; letter-spacing: .5px; }
-    .c-play  { color: #555; }
-
-    /* ── Modals ──────────────────────────────────────────── */
-    .modal {
-      position: fixed;
-      inset: 0;
-      background: rgba(0,0,0,.88);
-      display: none;
-      justify-content: center;
-      align-items: center;
-      z-index: 2000;
-      backdrop-filter: blur(10px);
-    }
-    .modal.open { display: flex; }
-    .modal-box {
-      background: var(--card);
-      width: 90%;
-      max-width: 400px;
-      border-radius: 28px;
-      padding: 28px 22px;
-      border: 1px solid var(--primary);
-      box-shadow: 0 0 40px rgba(0,242,255,.3);
-    }
-    .modal-title {
-      font-size: 1.6rem;
-      font-weight: 800;
-      color: var(--primary);
-      margin-bottom: 18px;
-      text-align: center;
-    }
-    .bank-box {
-      background: #0b0e17;
-      border: 1px solid var(--divider);
-      border-radius: 14px;
-      padding: 14px;
-      margin-bottom: 18px;
-      text-align: center;
-    }
-    .bank-box .ph { color: var(--primary); font-size: 1.2rem; font-weight: 700; }
-    .bank-box .nm { color: var(--orange);  font-weight: 500; font-size: .9rem; }
-    .modal-in {
-      width: 100%;
-      padding: 13px;
-      margin-bottom: 12px;
-      background: #0b0e17;
-      border: 1px solid var(--divider);
-      border-radius: 12px;
-      color: #fff;
-      font-size: .95rem;
-      outline: none;
-    }
-    .modal-in:focus { border-color: var(--primary); }
-    .modal-note { font-size: .78rem; color: var(--muted); text-align: center; margin-top: 8px; }
-    .modal-btns { display: flex; gap: 10px; margin-top: 18px; }
-    .modal-btn {
-      flex: 1;
-      padding: 15px;
-      border: none;
-      border-radius: 12px;
-      font-size: .95rem;
-      font-weight: 700;
-      cursor: pointer;
-      transition: opacity .15s;
-    }
-    .modal-btn:active { opacity: .75; }
-    .modal-btn.ok  { background: var(--primary); color: #000; }
-    .modal-btn.cnl { background: #2a2f3f; color: #fff; }
+    /* ── Modals ── */
+    .modal { position:fixed; inset:0; background:rgba(0,0,0,.88); display:none; justify-content:center; align-items:center; z-index:2000; backdrop-filter:blur(10px); }
+    .modal.open { display:flex; }
+    .modal-box { background:var(--card); width:90%; max-width:400px; border-radius:28px; padding:28px 22px; border:1px solid var(--primary); box-shadow:0 0 40px rgba(0,242,255,.3); }
+    .modal-title { font-size:1.6rem; font-weight:800; color:var(--primary); margin-bottom:18px; text-align:center; }
+    .bank-box { background:#0b0e17; border:1px solid var(--divider); border-radius:14px; padding:14px; margin-bottom:18px; text-align:center; }
+    .bank-box .ph { color:var(--primary); font-size:1.2rem; font-weight:700; }
+    .bank-box .nm { color:var(--orange); font-weight:500; font-size:.9rem; }
+    .modal-in { width:100%; padding:13px; margin-bottom:12px; background:#0b0e17; border:1px solid var(--divider); border-radius:12px; color:#fff; font-size:.95rem; outline:none; }
+    .modal-in:focus { border-color:var(--primary); }
+    .modal-note { font-size:.78rem; color:var(--muted); text-align:center; margin-top:8px; }
+    .modal-btns { display:flex; gap:10px; margin-top:18px; }
+    .modal-btn { flex:1; padding:15px; border:none; border-radius:12px; font-size:.95rem; font-weight:700; cursor:pointer; transition:opacity .15s; }
+    .modal-btn:active { opacity:.75; }
+    .modal-btn.ok  { background:var(--primary); color:#000; }
+    .modal-btn.cnl { background:#2a2f3f; color:#fff; }
   </style>
 </head>
 <body>
 <div class="shell">
-
-  <!-- ── Header ── -->
   <header class="header">
     <div class="user-info">
-      <div class="badge"  id="uName">TG_USER</div>
+      <div class="badge" id="uName">TG_USER</div>
       <div class="balance-wrap"><span id="uBalance">1,000</span> <small>MMK</small></div>
     </div>
     <nav class="nav">
@@ -396,25 +214,22 @@
     </nav>
   </header>
 
-  <!-- ── Game display ── -->
   <div class="game-display" id="gameDisplay">
-    <!-- Recent crash history pills -->
     <div class="crash-bar" id="crashBar"></div>
-
-    <!-- Main multiplier -->
-    <span class="mult-val" id="multVal">1.00x</span>
-
-    <!-- Countdown overlay -->
+    <span class="mult-val demo" id="multVal">1.00x</span>
+    <!-- ★ Demo badge — shown when in idle/demo multiplier mode -->
+    <div class="demo-badge" id="demoBadge">DEMO</div>
+    <!-- ★ FOMO label — shown after user cashes out -->
+    <div class="fomo-label" id="fomoLabel"></div>
     <div class="cd-overlay" id="cdOverlay">
       <div class="cd-ring"><span class="cd-num" id="cdNum">5</span></div>
       <span class="cd-label" id="cdLabel">GET READY</span>
     </div>
   </div>
 
-  <!-- ── Control panel ── -->
   <section class="panel">
     <input type="number" class="amount-in" id="betAmt" value="1000" min="1" placeholder="ငွေပမာဏ">
-    <div class="chips" id="chipRow">
+    <div class="chips">
       <div class="chip" data-val="500">500</div>
       <div class="chip" data-val="1000">1,000</div>
       <div class="chip" data-val="5000">5,000</div>
@@ -423,17 +238,13 @@
     <button class="main-btn mode-idle" id="mainBtn" disabled>START</button>
   </section>
 
-  <!-- ── History ── -->
   <section class="hist-card">
-    <div class="hist-head">
-      <span>ကစားသမား</span><span>စတင်</span><span>ရပ်တန့်</span>
-    </div>
+    <div class="hist-head"><span>ကစားသမား</span><span>စတင်</span><span>ရပ်တန့်</span></div>
     <div class="hist-body" id="histBody"></div>
   </section>
+</div>
 
-</div><!-- /shell -->
-
-<!-- ── Deposit modal ── -->
+<!-- Deposit Modal -->
 <div class="modal" id="modalDep">
   <div class="modal-box">
     <div class="modal-title">💰 ငွေသွင်းရန်</div>
@@ -452,7 +263,7 @@
   </div>
 </div>
 
-<!-- ── Withdraw modal ── -->
+<!-- Withdraw Modal -->
 <div class="modal" id="modalWith">
   <div class="modal-box">
     <div class="modal-title">💸 ငွေထုတ်ရန်</div>
@@ -466,23 +277,21 @@
   </div>
 </div>
 
-<!-- ═══════════════════════════════════════════════════════════
-     CLIENT SCRIPT
-     ═══════════════════════════════════════════════════════════ -->
 <script>
 'use strict';
 
-/* ── Telegram WebApp ─────────────────────────────────────────────────────── */
-const tg = window.Telegram?.WebApp ?? { expand(){}, ready(){}, initDataUnsafe:{},
-  showAlert(m){ alert(m); }, setHeaderColor(){}, setBackgroundColor(){} };
+// ── Telegram ──────────────────────────────────────────────────────────────────
+const tg = window.Telegram?.WebApp ?? {
+  expand(){}, ready(){}, initDataUnsafe:{},
+  showAlert(m){ alert(m); }, setHeaderColor(){}, setBackgroundColor(){}
+};
 tg.expand(); tg.ready();
-tg.setHeaderColor('#060912');
-tg.setBackgroundColor('#060912');
+tg.setHeaderColor('#060912'); tg.setBackgroundColor('#060912');
 
-const BACKEND = 'https://crashgame-money2.onrender.com'; // ← your Render URL
+const BACKEND = 'https://crashgame-money2.onrender.com';
 
-/* ── DOM refs (cache once) ───────────────────────────────────────────────── */
-const $  = id => document.getElementById(id);
+// ── DOM refs ──────────────────────────────────────────────────────────────────
+const $   = id => document.getElementById(id);
 const DOM = {
   name:      $('uName'),
   balance:   $('uBalance'),
@@ -495,103 +304,206 @@ const DOM = {
   btn:       $('mainBtn'),
   betAmt:    $('betAmt'),
   chips:     document.querySelectorAll('.chip'),
+  demoBadge: $('demoBadge'),
+  fomoLabel: $('fomoLabel'),
 };
 
-/* ── Client state ────────────────────────────────────────────────────────── */
+// ── Client state ──────────────────────────────────────────────────────────────
 let state = {
-  telegramId:   null,
-  username:     '',
-  phase:        'idle',     // 'countdown' | 'running' | 'crashed'
-  gameId:       null,
-  hasBet:       false,
-  currentBetAmt:0,
-  cdTimer:      null,       // clearInterval handle for countdown animation
-  isConnected:  false,
+  telegramId:    null,
+  username:      '',
+  phase:         'idle',      // 'countdown'|'running'|'visual'|'crashed'|'idle'
+  gameId:        null,
+  hasBet:        false,
+  currentBetAmt: 0,
+  cdTimer:       null,
+  isConnected:   false,
+  // ★ RAF state for smooth multiplier interpolation
+  rafId:         null,
+  lastServerMult:1.0,
+  lastServerTs:  0,
+  // ★ Demo mode state
+  isDemoRunning: false,
+  demoRafId:     null,
+  demoCrashPoint:0,
+  demoStartMult: 1.0,
+  demoStartTime: 0,
+  // ★ FOMO state
+  fomoPoint:     0,
 };
 
-/* ── Efficient active-bet row map ────────────────────────────────────────── */
-// username → <div.hist-row> element
-// Reuse existing DOM nodes instead of innerHTML rebuild
+// ── Active row map ─────────────────────────────────────────────────────────────
 const liveRows = new Map();
+const MAX_HIST_ROWS = 25;
 
-/* ─────────────────────────────────────────────────────────────────────────
-   BUTTON STATE MACHINE
-   mode: 'idle' | 'start' | 'stop-wait' | 'stop' | 'win'
-   ───────────────────────────────────────────────────────────────────────── */
+// ═══════════════════════════════════════════════════════════════════════════
+//  BUTTON STATE MACHINE
+// ═══════════════════════════════════════════════════════════════════════════
 function setBtn(mode, label) {
-  const b = DOM.btn;
-  b.className = 'main-btn mode-' + mode;
-  b.disabled  = (mode === 'idle' || mode === 'stop-wait' || mode === 'win');
-  b.textContent = label ?? {
-    idle:       'START',
-    start:      'START',
-    'stop-wait':'STOP ⏳',
-    stop:       'STOP',
-    win:        'အနိုင်ရရှိသည်',
+  DOM.btn.className  = 'main-btn mode-' + mode;
+  DOM.btn.disabled   = ['idle','stop-wait','win'].includes(mode);
+  DOM.btn.textContent = label ?? {
+    idle: 'START', start: 'START',
+    'stop-wait': 'STOP ⏳', stop: 'STOP', win: 'အနိုင်ရရှိသည်',
   }[mode];
 }
 
-/* ─────────────────────────────────────────────────────────────────────────
-   CHIPS — lock/unlock
-   ───────────────────────────────────────────────────────────────────────── */
 function lockChips(lock) {
   DOM.chips.forEach(c => c.classList.toggle('locked', lock));
 }
-DOM.chips.forEach(c => c.addEventListener('click', () => {
-  DOM.betAmt.value = c.dataset.val;
-}));
+DOM.chips.forEach(c => c.addEventListener('click', () => { DOM.betAmt.value = c.dataset.val; }));
 
-/* ─────────────────────────────────────────────────────────────────────────
-   MULTIPLIER DISPLAY
-   Update text node directly — no style recalc from innerHTML
-   ───────────────────────────────────────────────────────────────────────── */
-let _lastMult = '';
-function setMult(val, crashed = false) {
-  const txt = val.toFixed(2) + 'x';
-  if (txt !== _lastMult) {
-    DOM.multVal.textContent = txt;
-    _lastMult = txt;
-  }
-  DOM.multVal.classList.toggle('crashed', crashed);
+// ═══════════════════════════════════════════════════════════════════════════
+//  MULTIPLIER DISPLAY — requestAnimationFrame interpolation
+//  Instead of updating raw on every socket event (jumpy),
+//  RAF smoothly interpolates between server values at ~60fps
+// ═══════════════════════════════════════════════════════════════════════════
+const GROWTH_RATE = 0.08; // must match server
+
+/** Called when server sends a new multiplier value + timestamp */
+function onServerMultiplier(mult, ts) {
+  state.lastServerMult = mult;
+  state.lastServerTs   = ts || Date.now();
 }
 
-/* ─────────────────────────────────────────────────────────────────────────
-   COUNTDOWN UI
-   ───────────────────────────────────────────────────────────────────────── */
+/** ★ RAF loop — runs at ~60fps, interpolates between server ticks (50ms) */
+let _rafPhase = 'idle'; // tracks what the RAF loop is rendering
+
+function startRAF() {
+  if (state.rafId) cancelAnimationFrame(state.rafId);
+  _rafPhase = 'running';
+
+  function frame() {
+    if (_rafPhase !== 'running') return;
+
+    // Predict current multiplier based on time elapsed since last server tick
+    const now     = Date.now();
+    const elapsed = (now - state.lastServerTs) / 1000;
+    const base    = state.lastServerMult;
+
+    // Extrapolate forward using same growth formula as server
+    const predicted = Math.round(Math.pow(Math.E, Math.log(base) + GROWTH_RATE * elapsed) * 100) / 100;
+
+    setMultDisplay(predicted, 'running');
+
+    state.rafId = requestAnimationFrame(frame);
+  }
+
+  state.rafId = requestAnimationFrame(frame);
+}
+
+function stopRAF() {
+  _rafPhase = 'idle';
+  if (state.rafId) { cancelAnimationFrame(state.rafId); state.rafId = null; }
+}
+
+// ─── Demo RAF — runs during countdown to show fake exciting numbers ────────────
+function startDemoRAF(demoCrashPoint) {
+  stopDemoRAF();
+  state.demoCrashPoint = demoCrashPoint;
+  state.demoStartMult  = 1.0;
+  state.demoStartTime  = Date.now();
+
+  DOM.demoBadge.classList.add('visible');
+  DOM.multVal.className = 'mult-val demo';
+
+  let demoMult = 1.0;
+
+  function demoFrame() {
+    if (!state.isDemoRunning) return;
+
+    const elapsed = (Date.now() - state.demoStartTime) / 1000;
+    demoMult = Math.round(Math.pow(Math.E, GROWTH_RATE * elapsed) * 100) / 100;
+
+    // Update display — grey/dim to signal demo
+    const txt = demoMult.toFixed(2) + 'x';
+    if (DOM.multVal.textContent !== txt) DOM.multVal.textContent = txt;
+
+    if (demoMult >= state.demoCrashPoint) {
+      // Demo "crash" — flash red briefly then reset
+      DOM.multVal.className = 'mult-val crashed';
+      setTimeout(() => {
+        if (state.isDemoRunning) {
+          DOM.multVal.textContent = '1.00x';
+          DOM.multVal.className = 'mult-val demo';
+          // Restart demo with new crash point
+          state.demoStartTime  = Date.now();
+        }
+      }, 800);
+      state.demoRafId = requestAnimationFrame(demoFrame);
+      return;
+    }
+
+    state.demoRafId = requestAnimationFrame(demoFrame);
+  }
+
+  state.isDemoRunning = true;
+  state.demoRafId = requestAnimationFrame(demoFrame);
+}
+
+function stopDemoRAF() {
+  state.isDemoRunning = false;
+  if (state.demoRafId) { cancelAnimationFrame(state.demoRafId); state.demoRafId = null; }
+  DOM.demoBadge.classList.remove('visible');
+}
+
+// ─── Multiplier display helper ─────────────────────────────────────────────────
+let _lastMultTxt = '';
+function setMultDisplay(val, mode) {
+  const txt = val.toFixed(2) + 'x';
+  if (txt !== _lastMultTxt) {
+    DOM.multVal.textContent = txt;
+    _lastMultTxt = txt;
+  }
+  // Apply CSS class based on mode
+  const cls = {
+    running: 'mult-val',
+    visual:  'mult-val visual',
+    crashed: 'mult-val crashed',
+    demo:    'mult-val demo',
+    idle:    'mult-val demo',
+  }[mode] || 'mult-val';
+  if (DOM.multVal.className !== cls) DOM.multVal.className = cls;
+}
+
+// ─── FOMO label ────────────────────────────────────────────────────────────────
+function showFomoLabel(cashoutMult, visualMult) {
+  DOM.fomoLabel.innerHTML =
+    `✅ ${cashoutMult.toFixed(2)}x မှာ ရပ်လိုက်သည်<br>` +
+    `<span style="color:var(--danger);font-size:1.1em">⚠️ ${visualMult.toFixed(2)}x ထိ တက်သွားသည်!</span>`;
+  DOM.fomoLabel.classList.add('visible');
+}
+function hideFomoLabel() {
+  DOM.fomoLabel.classList.remove('visible');
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+//  COUNTDOWN UI
+// ═══════════════════════════════════════════════════════════════════════════
 function startCdUI(seconds) {
   clearInterval(state.cdTimer);
   DOM.cdOverlay.classList.add('visible');
   DOM.cdNum.textContent   = seconds;
   DOM.cdLabel.textContent = 'GET READY';
   let cnt = seconds;
-
   state.cdTimer = setInterval(() => {
     cnt--;
-    if (cnt > 0) {
-      DOM.cdNum.textContent = cnt;
-    } else if (cnt === 0) {
-      DOM.cdNum.textContent   = 'GO!';
-      DOM.cdLabel.textContent = '';
-    } else {
+    if (cnt > 0)       DOM.cdNum.textContent = cnt;
+    else if (cnt === 0){ DOM.cdNum.textContent = 'GO!'; DOM.cdLabel.textContent = ''; }
+    else {
       clearInterval(state.cdTimer);
       setTimeout(() => DOM.cdOverlay.classList.remove('visible'), 350);
     }
   }, 1000);
 }
 
-/* ─────────────────────────────────────────────────────────────────────────
-   CRASH HISTORY BAR (top of game display)
-   ───────────────────────────────────────────────────────────────────────── */
-const crashHistory = [];   // last 8 crash points
-
+// ═══════════════════════════════════════════════════════════════════════════
+//  CRASH HISTORY BAR
+// ═══════════════════════════════════════════════════════════════════════════
+const crashHistory = [];
 function pushCrashHistory(point) {
   crashHistory.unshift(point);
   if (crashHistory.length > 8) crashHistory.pop();
-  renderCrashBar();
-}
-
-function renderCrashBar() {
-  // Use a DocumentFragment to batch DOM writes
   const frag = document.createDocumentFragment();
   crashHistory.forEach(pt => {
     const pill = document.createElement('span');
@@ -602,64 +514,35 @@ function renderCrashBar() {
   DOM.crashBar.replaceChildren(frag);
 }
 
-/* ─────────────────────────────────────────────────────────────────────────
-   HISTORY LIST — efficient DOM management
-   Each player's row is stored in liveRows Map and updated IN-PLACE.
-   No full list rebuild on activeBets or newHistory events.
-   ───────────────────────────────────────────────────────────────────────── */
-const MAX_HIST_ROWS = 25;
-
+// ═══════════════════════════════════════════════════════════════════════════
+//  HISTORY TABLE — efficient in-place DOM updates
+// ═══════════════════════════════════════════════════════════════════════════
 function createRow(username, isBot) {
-  const row  = document.createElement('div');
+  const row   = document.createElement('div');
   row.className = 'hist-row';
-
   const nameEl  = document.createElement('span');
   nameEl.className = 'name' + (isBot ? ' bot' : '');
   nameEl.textContent = username;
-
   const startEl = document.createElement('span');
   startEl.textContent = '1.00x';
-
   const stopEl  = document.createElement('span');
   stopEl.className = 'c-play';
   stopEl.textContent = 'Playing..';
-
-  row.appendChild(nameEl);
-  row.appendChild(startEl);
-  row.appendChild(stopEl);
-
-  row._stopEl = stopEl;   // fast reference
+  row.appendChild(nameEl); row.appendChild(startEl); row.appendChild(stopEl);
+  row._stopEl = stopEl;
   return row;
 }
-
-/** Set a row's stop-cell to win / crash / playing state without touching other cells */
 function setRowStop(row, status, val) {
   const el = row._stopEl;
-  if (status === 'playing') {
-    el.className   = 'c-play';
-    el.textContent = 'Playing..';
-  } else if (status === 'won') {
-    el.className   = 'c-win';
-    el.textContent = Number(val).toFixed(2) + 'x';
-  } else {
-    el.className   = 'c-crash';
-    el.textContent = 'CRASH';
-  }
+  if (status === 'playing') { el.className = 'c-play'; el.textContent = 'Playing..'; }
+  else if (status === 'won'){ el.className = 'c-win';  el.textContent = Number(val).toFixed(2) + 'x'; }
+  else                       { el.className = 'c-crash'; el.textContent = 'CRASH'; }
 }
-
-/** Rebuild the playing rows at the start of each game.
- *  Only called once per game — NOT on every multiplier tick. */
 function renderActiveBets(bets) {
-  // Remove rows that are no longer active
-  const incomingNames = new Set(bets.map(b => b.username));
+  const incoming = new Set(bets.map(b => b.username));
   for (const [name, row] of liveRows.entries()) {
-    if (!incomingNames.has(name)) {
-      row.remove();
-      liveRows.delete(name);
-    }
+    if (!incoming.has(name)) { row.remove(); liveRows.delete(name); }
   }
-
-  // Add rows for new bets
   const frag = document.createDocumentFragment();
   bets.forEach(b => {
     if (!liveRows.has(b.username)) {
@@ -668,33 +551,23 @@ function renderActiveBets(bets) {
       frag.appendChild(row);
     }
   });
-  // Prepend new rows before existing finished rows
   DOM.histBody.insertBefore(frag, DOM.histBody.firstChild);
-
   trimHistory();
 }
-
-/** Called when someone cashes out or we receive a loss entry */
 function addOrUpdateHistory(d) {
   const { username, stop, status, isBot } = d;
-
   if (liveRows.has(username)) {
-    // In-place DOM update — ZERO layout recalculation overhead
     const row = liveRows.get(username);
     setRowStop(row, status === 'won' ? 'won' : 'crash', stop);
-    // Move to top
     DOM.histBody.insertBefore(row, DOM.histBody.firstChild);
     liveRows.delete(username);
   } else {
-    // Fallback: brand new row (late-join scenario)
     const row = createRow(username, isBot);
     setRowStop(row, status === 'won' ? 'won' : 'crash', stop);
     DOM.histBody.insertBefore(row, DOM.histBody.firstChild);
   }
   trimHistory();
 }
-
-/** Crash all remaining Playing.. rows instantly */
 function crashAllLive() {
   for (const [, row] of liveRows.entries()) {
     setRowStop(row, 'crash', 0);
@@ -702,174 +575,167 @@ function crashAllLive() {
   }
   liveRows.clear();
 }
-
 function trimHistory() {
   const rows = DOM.histBody.children;
-  while (rows.length > MAX_HIST_ROWS) {
-    DOM.histBody.removeChild(rows[rows.length - 1]);
-  }
+  while (rows.length > MAX_HIST_ROWS) DOM.histBody.removeChild(rows[rows.length - 1]);
 }
 
-/* ─────────────────────────────────────────────────────────────────────────
-   BALANCE display
-   ───────────────────────────────────────────────────────────────────────── */
-function setBalance(val) {
-  DOM.balance.textContent = Number(val).toLocaleString();
-}
+// ── Balance ────────────────────────────────────────────────────────────────────
+function setBalance(val) { DOM.balance.textContent = Number(val).toLocaleString(); }
 
-/* ─────────────────────────────────────────────────────────────────────────
-   AUTH + INIT
-   ───────────────────────────────────────────────────────────────────────── */
+// ═══════════════════════════════════════════════════════════════════════════
+//  AUTH + INIT
+// ═══════════════════════════════════════════════════════════════════════════
 (async function init() {
   const tgUser = tg.initDataUnsafe?.user;
   if (tgUser) {
-    state.username = tgUser.username
-      || `${tgUser.first_name ?? ''}${tgUser.last_name ? ' ' + tgUser.last_name : ''}`
+    state.username   = tgUser.username
+      || `${tgUser.first_name ?? ''}${tgUser.last_name ? ' '+tgUser.last_name : ''}`
       || `User_${String(tgUser.id).slice(-4)}`;
     state.telegramId = String(tgUser.id);
     DOM.name.textContent = state.username;
-
     try {
-      const res = await fetch(`${BACKEND}/api/auth`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          id:         tgUser.id,
-          username:   state.username,
-          first_name: tgUser.first_name,
-          last_name:  tgUser.last_name,
-        }),
+      const res  = await fetch(`${BACKEND}/api/auth`, {
+        method:'POST', headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({ id: tgUser.id, username: state.username, first_name: tgUser.first_name, last_name: tgUser.last_name }),
       });
       const data = await res.json();
-      if (data.success) {
-        setBalance(data.user.balance);
-        connectSocket();
-      } else {
-        tg.showAlert(data.banned ? '⛔ Account ပိတ်ထားသည်။' : '❌ Auth failed');
-      }
+      if (data.success) { setBalance(data.user.balance); connectSocket(); }
+      else tg.showAlert(data.banned ? '⛔ Account ပိတ်ထားသည်။' : '❌ Auth failed');
     } catch {
-      tg.showAlert('❌ Server ချိတ်ဆက်မရ — retry in 3s');
+      tg.showAlert('❌ Server ချိတ်ဆက်မရ — retry 3s');
       setTimeout(init, 3000);
     }
   } else {
-    // Dev/browser fallback
-    state.telegramId = 'dev_' + Math.random().toString(36).slice(2, 7);
+    state.telegramId = 'dev_' + Math.random().toString(36).slice(2,7);
     state.username   = 'Dev User';
     DOM.name.textContent = state.username;
     connectSocket();
   }
 })();
 
-/* ─────────────────────────────────────────────────────────────────────────
-   SOCKET.IO — robust connection with auto-reconnect
-   ───────────────────────────────────────────────────────────────────────── */
+// ═══════════════════════════════════════════════════════════════════════════
+//  SOCKET.IO
+// ═══════════════════════════════════════════════════════════════════════════
 let socket;
 
 function connectSocket() {
   socket = io(BACKEND, {
-    query:       { userId: state.telegramId },
-    transports:  ['websocket', 'polling'],
+    query: { userId: state.telegramId },
+    transports: ['websocket','polling'],
     reconnection: true,
-    reconnectionDelay:     1000,
-    reconnectionDelayMax:  5000,
-    reconnectionAttempts:  Infinity,
+    reconnectionDelay: 1000, reconnectionDelayMax: 5000, reconnectionAttempts: Infinity,
   });
 
-  /* ── connect ── */
   socket.on('connect', () => {
     state.isConnected = true;
-    console.log('🟢 Socket connected:', socket.id);
     socket.emit('authenticate', { userId: state.telegramId });
   });
 
-  /* ── gameState (full sync on reconnect) ──────────────────────────────── */
+  // ── Full state sync on connect/reconnect ────────────────────────────────
   socket.on('gameState', (data) => {
     state.phase  = data.phase;
     state.gameId = data.gameId;
-    setMult(data.multiplier ?? 1.0, data.phase === 'crashed');
-
-    if (data.phase === 'running' && state.hasBet) setBtn('stop');
-    else if (data.phase === 'running')             setBtn('idle');
-    else if (data.phase === 'countdown')           setBtn('start');
-    else                                            setBtn('idle');
-
-    // Populate crash history bar
+    if (data.phase === 'running') {
+      onServerMultiplier(data.multiplier, data.ts);
+      startRAF();
+      setBtn(state.hasBet ? 'stop' : 'idle');
+    } else {
+      setMultDisplay(data.multiplier ?? 1.0, 'idle');
+      setBtn('idle');
+    }
     (data.history ?? []).forEach(h => pushCrashHistory(h.crashPoint));
   });
 
-  /* ── countdown ───────────────────────────────────────────────────────── */
+  // ── Countdown ──────────────────────────────────────────────────────────
   socket.on('countdown', (data) => {
     state.phase  = 'countdown';
     state.gameId = data.gameId;
     state.hasBet = false;
-    setMult(1.0, false);
+    hideFomoLabel();
+
+    // ★ Start DEMO multiplier animation to show exciting numbers
+    //   while user decides whether to bet
+    if (data.demoPoint) {
+      startDemoRAF(data.demoPoint);
+    } else {
+      setMultDisplay(1.0, 'demo');
+    }
+
     startCdUI(data.seconds);
     lockChips(false);
     setBtn('start');
   });
 
-  /* ── gameStart ───────────────────────────────────────────────────────── */
+  // ── Game Start ─────────────────────────────────────────────────────────
   socket.on('gameStart', (data) => {
     state.phase = 'running';
-    clearInterval(state.cdTimer);
+    stopDemoRAF();                          // ★ stop demo animation
     DOM.cdOverlay.classList.remove('visible');
     lockChips(true);
-
-    // Refresh active bets display
     if (data.bets) renderActiveBets(data.bets);
-
-    // Button transitions: if user bet during countdown → STOP enabled
+    // ★ Start RAF-based smooth multiplier
+    state.lastServerMult = 1.0;
+    state.lastServerTs   = Date.now();
+    startRAF();
     setBtn(state.hasBet ? 'stop' : 'idle');
   });
 
-  /* ── multiplier ──────────────────────────────────────────────────────── */
+  // ── Multiplier — feed into RAF interpolator ─────────────────────────────
   socket.on('multiplier', (data) => {
-    // Only update text — no class or layout change unless crashed
-    setMult(data.multiplier, false);
+    if (data.phase === 'visual') {
+      // ★ "Missed Opportunity" visual continuation — gold display, no cashout
+      stopRAF();
+      state.phase = 'visual';
+      setMultDisplay(data.multiplier, 'visual');
+      return;
+    }
+    if (data.phase === 'running') {
+      // Feed server value into RAF interpolator — RAF handles display at 60fps
+      onServerMultiplier(data.multiplier, data.ts || Date.now());
+    }
   });
 
-  /* ── gameCrashed ─────────────────────────────────────────────────────── */
+  // ── Real Crash ─────────────────────────────────────────────────────────
   socket.on('gameCrashed', (data) => {
     state.phase = 'crashed';
-    setMult(data.multiplier, true);   // red multiplier
+    stopRAF();
+    setMultDisplay(data.multiplier, 'crashed');
     pushCrashHistory(data.multiplier);
-
-    // ★ Instantly update all "Playing.." rows to CRASH
     crashAllLive();
-
-    // Button reset
-    if (state.hasBet) {
-      // User had uncashed bet → lost
-      setBtn('idle');
-      state.hasBet = false;
-    }
-    // If user already won (betResult fired) → button already in 'win' mode; leave it
+    if (state.hasBet) { setBtn('idle'); state.hasBet = false; }
   });
 
-  /* ── activeBets — called during countdown and on cashout ─────────────── */
+  // ── Visual Crash (FOMO end) ─────────────────────────────────────────────
+  socket.on('gameCrashedVisual', (data) => {
+    // Visual continuation ended — show final fake crash
+    setMultDisplay(data.multiplier, 'crashed');
+    // FOMO label already shown when user cashed out (see betResult)
+  });
+
+  // ── Active bets ─────────────────────────────────────────────────────────
   socket.on('activeBets', (data) => {
-    // Only rebuild if we're in countdown phase (game-start does its own render)
-    if (state.phase === 'countdown') {
-      renderActiveBets(data.bets ?? []);
-    }
+    if (state.phase === 'countdown') renderActiveBets(data.bets ?? []);
   });
 
-  /* ── newHistory — cashout or loss of a single player ─────────────────── */
-  socket.on('newHistory', (d) => {
-    addOrUpdateHistory(d);
-  });
+  // ── New history entry ───────────────────────────────────────────────────
+  socket.on('newHistory', (d) => addOrUpdateHistory(d));
 
-  /* ── betResult — the current user's cashout confirmed ────────────────── */
+  // ── Bet result (cashout) ────────────────────────────────────────────────
   socket.on('betResult', (d) => {
-    if (!d.success || d.type !== 'cashout') return;
-    if (d.userId !== state.telegramId) return;   // not our event
+    if (!d.success || d.type !== 'cashout' || d.userId !== state.telegramId) return;
 
     const total    = d.totalReturn ?? (state.currentBetAmt + d.profit);
     const rounded  = Math.round(total);
-    const winLabel = `အနိုင်ရရှိ — ${rounded.toLocaleString()} MMK`;
-
-    setBtn('win', winLabel);
+    setBtn('win', `အနိုင်ရရှိ — ${rounded.toLocaleString()} MMK`);
     state.hasBet = false;
+
+    // ★ Show FOMO label if server sent a visual hint
+    if (d.visualCrashHint && d.visualCrashHint > d.multiplier) {
+      state.fomoPoint = d.visualCrashHint;
+      // Show FOMO label after a brief delay so user sees their win first
+      setTimeout(() => showFomoLabel(d.multiplier, d.visualCrashHint), 1800);
+    }
 
     tg.showAlert(
       `✅ အနိုင်ရရှိသည်!\n` +
@@ -878,79 +744,58 @@ function connectSocket() {
     );
   });
 
-  /* ── balanceUpdate ───────────────────────────────────────────────────── */
+  // ── Balance update ──────────────────────────────────────────────────────
   socket.on('balanceUpdate', (d) => {
     if (d.userId === state.telegramId) setBalance(d.balance);
   });
 
-  /* ── disconnect / reconnect ──────────────────────────────────────────── */
-  socket.on('disconnect', (reason) => {
-    state.isConnected = false;
-    console.warn('🔴 Socket disconnected:', reason);
-  });
-
-  socket.on('reconnect', (attempt) => {
+  socket.on('disconnect', ()  => { state.isConnected = false; });
+  socket.on('reconnect',  ()  => {
     state.isConnected = true;
-    console.log('🔄 Reconnected after', attempt, 'attempts');
     socket.emit('authenticate', { userId: state.telegramId });
   });
-
-  socket.on('connect_error', (err) => {
-    console.error('Socket connect_error:', err.message);
-  });
+  socket.on('connect_error', (e) => console.error('Socket err:', e.message));
 }
 
-/* ─────────────────────────────────────────────────────────────────────────
-   MAIN BUTTON — click handler
-   ───────────────────────────────────────────────────────────────────────── */
+// ═══════════════════════════════════════════════════════════════════════════
+//  MAIN BUTTON
+// ═══════════════════════════════════════════════════════════════════════════
 DOM.btn.addEventListener('click', () => {
-  if (state.phase === 'running' && state.hasBet) {
-    // ── STOP / Cash out ──────────────────────────────────────────
-    DOM.btn.disabled = true;   // prevent double-tap while waiting for response
+  // STOP / Cash out
+  if (state.hasBet && state.phase === 'running') {
+    DOM.btn.disabled = true;
     const mult = parseFloat(DOM.multVal.textContent) || 1.0;
-
-    socket.emit('cashOut', {
-      userId:     state.telegramId,
-      multiplier: mult,
-      gameId:     state.gameId,     // ★ send gameId for server-side validation
-    }, (res) => {
+    socket.emit('cashOut', { userId: state.telegramId, multiplier: mult, gameId: state.gameId }, (res) => {
       if (!res?.success) {
-        DOM.btn.disabled = false;   // re-enable if failed
+        DOM.btn.disabled = false;
         tg.showAlert('❌ ' + (res?.message ?? 'Cashout မအောင်မြင်'));
       }
-      // On success, betResult event will update button
     });
     return;
   }
 
+  // Place bet — only during countdown
   if (state.phase !== 'countdown') {
     tg.showAlert('❌ Countdown အတွင်းသာ Bet လောင်းနိုင်သည်။');
     return;
   }
-  if (state.hasBet) {
-    tg.showAlert('❌ ဤပတ်တွင် Bet လောင်းပြီးပါပြီ။');
-    return;
-  }
+  if (state.hasBet) { tg.showAlert('❌ ဤပတ်တွင် Bet လောင်းပြီးပါပြီ။'); return; }
 
-  // ── Place bet ────────────────────────────────────────────────
   const amt = parseFloat(DOM.betAmt.value);
-  const bal = parseFloat(DOM.balance.textContent.replace(/,/g, ''));
-  if (!amt || amt <= 0)      { tg.showAlert('❌ ငွေပမာဏထည့်ပါ။');  return; }
-  if (amt > bal)             { tg.showAlert('❌ လက်ကျန်မလုံလောက်'); return; }
-  if (!state.isConnected)    { tg.showAlert('❌ ချိတ်ဆက်မှုမရှိ');   return; }
+  const bal = parseFloat(DOM.balance.textContent.replace(/,/g,''));
+  if (!amt || amt <= 0) { tg.showAlert('❌ ငွေပမာဏထည့်ပါ။'); return; }
+  if (amt > bal)        { tg.showAlert('❌ လက်ကျန်မလုံလောက်');  return; }
+  if (!state.isConnected){ tg.showAlert('❌ ချိတ်ဆက်မှုမရှိ');   return; }
 
   state.currentBetAmt = amt;
-  DOM.btn.disabled = true;   // prevent double-tap
+  DOM.btn.disabled = true;
 
-  socket.emit('placeBet', {
-    userId:   state.telegramId,
-    username: state.username,
-    amount:   amt,
-  }, (res) => {
+  socket.emit('placeBet', { userId: state.telegramId, username: state.username, amount: amt }, (res) => {
     if (res?.success) {
       state.hasBet = true;
       if (res.newBalance != null) setBalance(res.newBalance);
-      // Show STOP (disabled) immediately — enabled when gameStart fires
+      // ★ Stop demo animation — user has committed to a bet
+      stopDemoRAF();
       setBtn('stop-wait', 'STOP ⏳');
     } else {
       DOM.btn.disabled = false;
@@ -959,69 +804,43 @@ DOM.btn.addEventListener('click', () => {
   });
 });
 
-/* ─────────────────────────────────────────────────────────────────────────
-   MODAL helpers
-   ───────────────────────────────────────────────────────────────────────── */
-const modalIds = { dep: 'modalDep', with: 'modalWith' };
-
-function openModal(type) {
-  document.getElementById(modalIds[type])?.classList.add('open');
-}
-function closeModal(type) {
-  const el = document.getElementById(modalIds[type]);
+// ═══════════════════════════════════════════════════════════════════════════
+//  MODAL HELPERS
+// ═══════════════════════════════════════════════════════════════════════════
+const modalIds = { dep:'modalDep', with:'modalWith' };
+window.openModal  = (t) => document.getElementById(modalIds[t])?.classList.add('open');
+window.closeModal = (t) => {
+  const el = document.getElementById(modalIds[t]);
   el?.classList.remove('open');
-  // Clear inputs
-  el?.querySelectorAll('input').forEach(i => i.value = '');
-}
-// Expose globally for onclick attributes
-window.openModal  = openModal;
-window.closeModal = closeModal;
+  el?.querySelectorAll('input').forEach(i => i.value='');
+};
 
-/* ── Deposit ─────────────────────────────────────────────────────────────── */
 window.submitDeposit = async () => {
-  const name   = $('dName').value.trim();
-  const phone  = $('dPhone').value.trim();
-  const amount = parseInt($('dAmount').value);
-  if (!name || !phone || !amount) { tg.showAlert('❌ အချက်အလက်အပြည့်ထည့်ပါ။'); return; }
-  if (amount < 3000)              { tg.showAlert('❌ အနည်းဆုံး 3000 MMK ဖြစ်ရမည်။'); return; }
+  const name = $('dName').value.trim(), phone = $('dPhone').value.trim(), amount = parseInt($('dAmount').value);
+  if (!name||!phone||!amount){ tg.showAlert('❌ အချက်အလက်အပြည့်ထည့်ပါ။'); return; }
+  if (amount<3000)            { tg.showAlert('❌ အနည်းဆုံး 3000 MMK'); return; }
   try {
-    const r = await fetch(`${BACKEND}/api/deposit`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ userId: state.telegramId, username: state.username, name, phone, amount }),
-    });
+    const r = await fetch(`${BACKEND}/api/deposit`,{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({userId:state.telegramId,username:state.username,name,phone,amount})});
     const d = await r.json();
-    tg.showAlert(d.success
-      ? `✅ ငွေသွင်းတောင်းဆိုချက် (${amount.toLocaleString()} MMK) ပို့ပြီးပါပြီ။\nAdmin အတည်ပြုပါလိမ့်မယ်။`
-      : '❌ ' + (d.message ?? 'ငွေသွင်းရာတွင်ပြဿနာ'));
+    tg.showAlert(d.success ? `✅ ငွေသွင်းတောင်းဆိုချက် (${amount.toLocaleString()} MMK) ပို့ပြီးပါပြီ။` : '❌ '+(d.message||'ပြဿနာ'));
   } catch { tg.showAlert('❌ Server ချိတ်ဆက်မရ'); }
   closeModal('dep');
 };
 
-/* ── Withdraw ────────────────────────────────────────────────────────────── */
 window.submitWithdraw = async () => {
-  const name   = $('wName').value.trim();
-  const phone  = $('wPhone').value.trim();
-  const amount = parseInt($('wAmount').value);
-  const curBal = parseInt(DOM.balance.textContent.replace(/,/g, ''));
-  if (!name || !phone || !amount) { tg.showAlert('❌ အချက်အလက်အပြည့်ထည့်ပါ။'); return; }
-  if (amount > curBal)            { tg.showAlert('❌ လက်ကျန်မလုံလောက်');         return; }
+  const name = $('wName').value.trim(), phone = $('wPhone').value.trim(), amount = parseInt($('wAmount').value);
+  const curBal = parseInt(DOM.balance.textContent.replace(/,/g,''));
+  if (!name||!phone||!amount){ tg.showAlert('❌ အချက်အလက်အပြည့်ထည့်ပါ။'); return; }
+  if (amount > curBal)       { tg.showAlert('❌ လက်ကျန်မလုံလောက်'); return; }
   try {
-    const r = await fetch(`${BACKEND}/api/withdraw`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ userId: state.telegramId, username: state.username, name, phone, amount }),
-    });
+    const r = await fetch(`${BACKEND}/api/withdraw`,{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({userId:state.telegramId,username:state.username,name,phone,amount})});
     const d = await r.json();
     if (d.success) {
-      if (d.newBalance != null) setBalance(d.newBalance);
-      tg.showAlert(
-        `✅ ငွေထုတ်တောင်းဆိုချက် (${amount.toLocaleString()} MMK) ပို့ပြီးပါပြီ။\n` +
-        `Admin စစ်ဆေးနေပါသည်။ Reject ဖြစ်ပါက ပိုက်ဆံပြန်ရမည်ဖြစ်ပါသည်။`
-      );
-    } else {
-      tg.showAlert('❌ ' + (d.message ?? 'ငွေထုတ်ရာတွင်ပြဿနာ'));
-    }
+      if (d.newBalance!=null) setBalance(d.newBalance);
+      tg.showAlert(`✅ ငွေထုတ်တောင်းဆိုချက် (${amount.toLocaleString()} MMK) ပို့ပြီးပါပြီ။\nAdmin စစ်ဆေးနေပါသည်။`);
+    } else tg.showAlert('❌ '+(d.message||'ပြဿနာ'));
   } catch { tg.showAlert('❌ Server ချိတ်ဆက်မရ'); }
   closeModal('with');
 };

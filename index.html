@@ -208,6 +208,7 @@
     <nav class="nav">
       <button class="nav-btn dep"  onclick="openModal('dep')">ငွေသွင်း</button>
       <button class="nav-btn with" onclick="openModal('with')">ငွေထုတ်</button>
+      <button class="nav-btn" style="border-color:#ffd700;color:#ffd700;" onclick="openRefModal()">👥 ဖိတ်ခေါ်</button>
     </nav>
   </header>
 
@@ -266,10 +267,33 @@
     <div class="modal-title">💸 ငွေထုတ်ရန်</div>
     <input class="modal-in" id="wName"   type="text"   placeholder="KPay အကောင့်နာမည်">
     <input class="modal-in" id="wPhone"  type="text"   placeholder="KPay ဖုန်းနံပါတ်">
-    <input class="modal-in" id="wAmount" type="number" placeholder="ငွေပမာဏ">
+    <input class="modal-in" id="wAmount" type="number" placeholder="ငွေပမာဏ (အနည်းဆုံး 10,000 MMK)">
+    <p class="modal-note" style="color:#ff9900;">* အနည်းဆုံး 10,000 MMK ထုတ်ယူနိုင်သည်။</p>
     <div class="modal-btns">
       <button class="modal-btn ok"  onclick="submitWithdraw()">အတည်ပြုမည်</button>
       <button class="modal-btn cnl" onclick="closeModal('with')">ဖျက်သိမ်း</button>
+    </div>
+  </div>
+</div>
+
+<!-- Referral Modal -->
+<div class="modal" id="modalRef">
+  <div class="modal-box">
+    <div class="modal-title">👥 သူငယ်ချင်းဖိတ်ခေါ်ရန်</div>
+    <div class="bank-box" style="margin-bottom:14px;">
+      <p class="ph" style="font-size:.95rem;">သူငယ်ချင်းတစ်ဦးဖိတ်ခေါ်တိုင်း</p>
+      <p class="nm" style="font-size:1.1rem;color:#ffd700;font-weight:700;">💰 100 MMK ရရှိမည်</p>
+    </div>
+    <div id="refStats" style="text-align:center;margin-bottom:14px;color:#8a8f9e;font-size:.88rem;">
+      ဖိတ်ခေါ်မှုအရေအတွက်: <span id="refCount" style="color:#00f2ff;font-weight:700;">0</span> ဦး &nbsp;|&nbsp;
+      စုစုပေါင်း: <span id="refEarned" style="color:#ffd700;font-weight:700;">0</span> MMK
+    </div>
+    <div style="background:#0b0e17;border:1px solid #2a2f3f;border-radius:12px;padding:12px;word-break:break-all;font-size:.82rem;color:#aaa;text-align:center;" id="refLinkBox">
+      —
+    </div>
+    <div class="modal-btns" style="margin-top:14px;">
+      <button class="modal-btn ok" onclick="shareRef()">📤 ဖိတ်ခေါ်ရန် Share</button>
+      <button class="modal-btn cnl" onclick="closeRefModal()">ပိတ်မည်</button>
     </div>
   </div>
 </div>
@@ -805,6 +829,7 @@ window.submitWithdraw = async () => {
   const name = $('wName').value.trim(), phone = $('wPhone').value.trim(), amount = parseInt($('wAmount').value);
   const curBal = parseInt(DOM.balance.textContent.replace(/,/g,''));
   if (!name||!phone||!amount){ tg.showAlert('❌ အချက်အလက်အပြည့်ထည့်ပါ။'); return; }
+  if (amount < 10000)        { tg.showAlert('❌ အနည်းဆုံး 10,000 MMK ထုတ်ရမည်'); return; }
   if (amount > curBal)       { tg.showAlert('❌ လက်ကျန်မလုံလောက်'); return; }
   try {
     const r = await fetch(`${BACKEND}/api/withdraw`,{method:'POST',headers:{'Content-Type':'application/json'},
@@ -816,6 +841,37 @@ window.submitWithdraw = async () => {
     } else tg.showAlert('❌ '+(d.message||'ပြဿနာ'));
   } catch { tg.showAlert('❌ Server ချိတ်ဆက်မရ'); }
   closeModal('with');
+};
+
+// ── Referral Modal ─────────────────────────────────────────────────────────────
+const BOT_USERNAME = 'pitesansharkyamal_bot';
+
+window.openRefModal = async () => {
+  const refLink = `https://t.me/${BOT_USERNAME}?start=ref_${state.telegramId}`;
+  $('refLinkBox').textContent = refLink;
+  document.getElementById('modalRef').classList.add('open');
+  try {
+    const r = await fetch(`${BACKEND}/api/ref/${state.telegramId}`);
+    const d = await r.json();
+    if (d.success) {
+      $('refCount').textContent  = d.refCount.toLocaleString();
+      $('refEarned').textContent = d.refEarned.toLocaleString();
+    }
+  } catch {}
+};
+
+window.closeRefModal = () => {
+  document.getElementById('modalRef').classList.remove('open');
+};
+
+window.shareRef = () => {
+  const refLink = `https://t.me/${BOT_USERNAME}?start=ref_${state.telegramId}`;
+  const shareText = `🎮 Crash Game ကစားပြီး ပိုက်ဆံရှာပါ!\n💰 ဝင်ရောက်တိုင်း 1,000 MMK ကြိုဆိုလက်ဆောင် ရရှိသည်!\n\n👇 Link ကနေဝင်ရောက်ပါ:\n${refLink}`;
+  if (tg?.openTelegramLink) {
+    tg.openTelegramLink(`https://t.me/share/url?url=${encodeURIComponent(refLink)}&text=${encodeURIComponent(shareText)}`);
+  } else {
+    navigator.clipboard?.writeText(refLink).then(() => tg.showAlert('✅ Link ကူးယူပြီးပါပြီ!'));
+  }
 };
 </script>
 </body>

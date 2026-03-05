@@ -90,9 +90,8 @@
       filter:drop-shadow(0 0 12px rgba(0,242,255,.25));
     }
     .mult-val.visual {
-      /* FOMO visual continuation phase — gold tint */
-      -webkit-text-fill-color:var(--gold) !important;
-      filter:drop-shadow(0 0 22px rgba(255,215,0,.55));
+      -webkit-text-fill-color:var(--danger) !important;
+      filter:drop-shadow(0 0 22px rgba(255,51,102,.55));
     }
 
     /* ── Demo badge ── */
@@ -106,15 +105,13 @@
     }
     .demo-badge.visible { opacity:1; }
 
-    /* ── FOMO label shown after user cashes out ── */
-    .fomo-label {
-      position:absolute; top:50%; left:50%; transform:translate(-50%,-50%);
-      font-size:.8rem; font-weight:700; color:var(--gold);
-      letter-spacing:1px; text-align:center; line-height:1.4; z-index:8;
-      opacity:0; transition:opacity .4s; pointer-events:none;
-      text-shadow:0 0 10px rgba(255,215,0,.6);
+    /* ── 1.00x instant crash flash ── */
+    .instant-crash-flash {
+      position:absolute; inset:0; background:rgba(255,0,50,0.18);
+      border-radius:24px; z-index:7; pointer-events:none;
+      opacity:0; transition:opacity .08s;
     }
-    .fomo-label.visible { opacity:1; }
+    .instant-crash-flash.active { opacity:1; }
 
     /* ── Countdown overlay ── */
     .cd-overlay {
@@ -219,8 +216,8 @@
     <span class="mult-val demo" id="multVal">1.00x</span>
     <!-- ★ Demo badge — shown when in idle/demo multiplier mode -->
     <div class="demo-badge" id="demoBadge">DEMO</div>
-    <!-- ★ FOMO label — shown after user cashes out -->
-    <div class="fomo-label" id="fomoLabel"></div>
+    <!-- ★ Instant 1.00x crash flash overlay -->
+    <div class="instant-crash-flash" id="crashFlash"></div>
     <div class="cd-overlay" id="cdOverlay">
       <div class="cd-ring"><span class="cd-num" id="cdNum">5</span></div>
       <span class="cd-label" id="cdLabel">GET READY</span>
@@ -305,7 +302,7 @@ const DOM = {
   betAmt:    $('betAmt'),
   chips:     document.querySelectorAll('.chip'),
   demoBadge: $('demoBadge'),
-  fomoLabel: $('fomoLabel'),
+  crashFlash: $('crashFlash'),
 };
 
 // ── Client state ──────────────────────────────────────────────────────────────
@@ -328,8 +325,7 @@ let state = {
   demoCrashPoint:0,
   demoStartMult: 1.0,
   demoStartTime: 0,
-  // ★ FOMO state
-  fomoPoint:     0,
+  // ★ No FOMO state needed
 };
 
 // ── Active row map ─────────────────────────────────────────────────────────────
@@ -466,15 +462,10 @@ function setMultDisplay(val, mode) {
   if (DOM.multVal.className !== cls) DOM.multVal.className = cls;
 }
 
-// ─── FOMO label ────────────────────────────────────────────────────────────────
-function showFomoLabel(cashoutMult, visualMult) {
-  DOM.fomoLabel.innerHTML =
-    `✅ ${cashoutMult.toFixed(2)}x မှာ ရပ်လိုက်သည်<br>` +
-    `<span style="color:var(--danger);font-size:1.1em">⚠️ ${visualMult.toFixed(2)}x ထိ တက်သွားသည်!</span>`;
-  DOM.fomoLabel.classList.add('visible');
-}
-function hideFomoLabel() {
-  DOM.fomoLabel.classList.remove('visible');
+// ─── Instant 1.00x crash flash ────────────────────────────────────────────────
+function flashInstantCrash() {
+  DOM.crashFlash.classList.add('active');
+  setTimeout(() => DOM.crashFlash.classList.remove('active'), 400);
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -652,7 +643,6 @@ function connectSocket() {
     state.phase  = 'countdown';
     state.gameId = data.gameId;
     state.hasBet = false;
-    hideFomoLabel();
 
     // ★ Start DEMO multiplier animation to show exciting numbers
     //   while user decides whether to bet
@@ -681,17 +671,9 @@ function connectSocket() {
     setBtn(state.hasBet ? 'stop' : 'idle');
   });
 
-  // ── Multiplier — feed into RAF interpolator ─────────────────────────────
+  // ── Multiplier ─────────────────────────────────────────────────────────
   socket.on('multiplier', (data) => {
-    if (data.phase === 'visual') {
-      // ★ "Missed Opportunity" visual continuation — gold display, no cashout
-      stopRAF();
-      state.phase = 'visual';
-      setMultDisplay(data.multiplier, 'visual');
-      return;
-    }
     if (data.phase === 'running') {
-      // Feed server value into RAF interpolator — RAF handles display at 60fps
       onServerMultiplier(data.multiplier, data.ts || Date.now());
     }
   });
@@ -703,15 +685,13 @@ function connectSocket() {
     setMultDisplay(data.multiplier, 'crashed');
     pushCrashHistory(data.multiplier);
     crashAllLive();
+    // ★ Flash red on 1.00x instant crash
+    if (data.multiplier <= 1.00) flashInstantCrash();
     if (state.hasBet) { setBtn('idle'); state.hasBet = false; }
   });
 
-  // ── Visual Crash (FOMO end) ─────────────────────────────────────────────
-  socket.on('gameCrashedVisual', (data) => {
-    // Visual continuation ended — show final fake crash
-    setMultDisplay(data.multiplier, 'crashed');
-    // FOMO label already shown when user cashed out (see betResult)
-  });
+  // ── Visual Crash (remove — no longer used) ──────────────────────────────
+  socket.on('gameCrashedVisual', () => {});
 
   // ── Active bets ─────────────────────────────────────────────────────────
   socket.on('activeBets', (data) => {
@@ -725,17 +705,10 @@ function connectSocket() {
   socket.on('betResult', (d) => {
     if (!d.success || d.type !== 'cashout' || d.userId !== state.telegramId) return;
 
-    const total    = d.totalReturn ?? (state.currentBetAmt + d.profit);
-    const rounded  = Math.round(total);
+    const total   = d.totalReturn ?? (state.currentBetAmt + d.profit);
+    const rounded = Math.round(total);
     setBtn('win', `အနိုင်ရရှိ — ${rounded.toLocaleString()} MMK`);
     state.hasBet = false;
-
-    // ★ Show FOMO label if server sent a visual hint
-    if (d.visualCrashHint && d.visualCrashHint > d.multiplier) {
-      state.fomoPoint = d.visualCrashHint;
-      // Show FOMO label after a brief delay so user sees their win first
-      setTimeout(() => showFomoLabel(d.multiplier, d.visualCrashHint), 1800);
-    }
 
     tg.showAlert(
       `✅ အနိုင်ရရှိသည်!\n` +

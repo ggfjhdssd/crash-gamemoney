@@ -7,271 +7,428 @@
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
         * { margin:0; padding:0; box-sizing:border-box; font-family: 'Inter', sans-serif; }
-        body { background: #0a0c15; color: #e0e0e0; padding:20px; }
+        body { background: #0a0c15; color: #e0e0e0; padding:16px; }
         .container { max-width:1200px; margin:0 auto; }
-        h1 { color: #00f2ff; margin-bottom:20px; }
-        .tabs { display:flex; gap:10px; margin-bottom:20px; flex-wrap:wrap; }
-        .tab { padding:10px 20px; background:#1e2333; border:none; color:white; cursor:pointer; border-radius:8px; font-weight:600; }
+        h1 { color: #00f2ff; margin-bottom:6px; font-size:1.4rem; }
+        .subtitle { color:#555; font-size:.8rem; margin-bottom:16px; }
+
+        .stats-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(140px,1fr)); gap:10px; margin-bottom:18px; }
+        .stat-card { background:#161b29; border-radius:12px; padding:14px; border:1px solid #1e2333; text-align:center; }
+        .stat-card .val { font-size:1.35rem; font-weight:800; color:#00f2ff; }
+        .stat-card .lbl { font-size:.72rem; color:#555; margin-top:4px; text-transform:uppercase; letter-spacing:.5px; }
+
+        .tabs { display:flex; gap:8px; margin-bottom:16px; flex-wrap:wrap; }
+        .tab { padding:9px 16px; background:#1e2333; border:none; color:#aaa; cursor:pointer; border-radius:8px; font-weight:600; font-size:.85rem; transition:.15s; }
         .tab.active { background:#00f2ff; color:#000; }
-        .section { display:none; background:#161b29; padding:20px; border-radius:16px; }
+        .section { display:none; background:#161b29; padding:18px; border-radius:16px; border:1px solid #1e2333; }
         .section.active { display:block; }
-        table { width:100%; border-collapse:collapse; font-size:14px; }
-        th { text-align:left; padding:12px 8px; background:#1e2333; color:#aaa; font-weight:600; }
-        td { padding:10px 8px; border-bottom:1px solid #2a2f3f; }
-        .badge { padding:4px 8px; border-radius:4px; font-size:12px; font-weight:600; }
-        .badge.success { background:#00ff88; color:#003311; }
-        .badge.warning { background:#ff9900; color:#000; }
-        .badge.danger { background:#ff3366; color:#fff; }
-        button { padding:6px 12px; border:none; border-radius:6px; cursor:pointer; font-weight:600; transition:0.2s; }
+
+        table { width:100%; border-collapse:collapse; font-size:.83rem; }
+        th { text-align:left; padding:10px 8px; background:#1e2333; color:#888; font-weight:600; font-size:.75rem; text-transform:uppercase; }
+        td { padding:9px 8px; border-bottom:1px solid #1a1f2e; vertical-align:middle; }
+        tr:hover td { background:rgba(0,242,255,.03); }
+
+        button { padding:6px 11px; border:none; border-radius:6px; cursor:pointer; font-weight:600; font-size:.8rem; transition:.15s; }
         button.primary { background:#00f2ff; color:#000; }
-        button.danger { background:#ff3366; color:#fff; }
-        button:active { transform:scale(0.95); }
-        .modal { position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.8); display:none; justify-content:center; align-items:center; z-index:1000; }
-        .modal-content { background:#161b29; padding:30px; border-radius:24px; max-width:400px; width:90%; border:1px solid #00f2ff; }
-        .modal-content h3 { margin-bottom:20px; color:#00f2ff; }
-        .modal-content input, .modal-content select { width:100%; padding:12px; margin-bottom:15px; background:#0b0e17; border:1px solid #2a2f3f; border-radius:8px; color:white; }
-        .modal-buttons { display:flex; gap:10px; }
-        hr { margin:15px 0; border-color:#2a2f3f; }
-        .status-pending { color:#ff9900; font-weight:bold; }
-        .status-confirmed { color:#00ff88; font-weight:bold; }
-        .status-rejected { color:#ff3366; font-weight:bold; }
+        button.danger  { background:#ff3366; color:#fff; }
+        button.warning { background:#ff9900; color:#000; }
+        button.success { background:#00ff88; color:#003311; }
+        button.ghost   { background:#2a2f3f; color:#ccc; }
+        button:active  { transform:scale(.95); }
+
+        .badge { padding:3px 8px; border-radius:4px; font-size:.72rem; font-weight:700; }
+        .badge.ok   { background:#00ff88; color:#003311; }
+        .badge.warn { background:#ff9900; color:#000; }
+        .badge.bad  { background:#ff3366; color:#fff; }
+
+        .modal { position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,.85); display:none; justify-content:center; align-items:center; z-index:1000; backdrop-filter:blur(8px); }
+        .modal.open { display:flex; }
+        .modal-content { background:#161b29; padding:28px; border-radius:20px; max-width:420px; width:92%; border:1px solid #00f2ff; }
+        .modal-content h3 { margin-bottom:18px; color:#00f2ff; font-size:1.1rem; }
+        .modal-content input, .modal-content select, .modal-content textarea {
+            width:100%; padding:11px; margin-bottom:12px; background:#0b0e17;
+            border:1px solid #2a2f3f; border-radius:8px; color:white; font-size:.9rem; outline:none;
+        }
+        .modal-content textarea { resize:vertical; min-height:90px; font-family:inherit; }
+        .modal-buttons { display:flex; gap:10px; margin-top:6px; }
+
+        .house-panel { background:#0d1220; border:1px solid #2a2f3f; border-radius:12px; padding:16px; margin-bottom:16px; display:flex; flex-wrap:wrap; gap:14px; align-items:center; }
+        .house-panel .hval { font-size:1.5rem; font-weight:800; color:#ffd700; }
+        .house-panel .hlbl { font-size:.75rem; color:#555; }
+
+        .search-bar { width:100%; padding:10px 14px; background:#0b0e17; border:1px solid #2a2f3f; border-radius:10px; color:#fff; margin-bottom:14px; outline:none; font-size:.9rem; }
+
+        .pill-row { display:flex; gap:6px; flex-wrap:wrap; margin-bottom:14px; }
+        .broadcast-box textarea { width:100%; background:#0b0e17; border:1px solid #2a2f3f; border-radius:8px; color:#fff; padding:12px; font-family:inherit; font-size:.9rem; outline:none; resize:vertical; min-height:100px; }
+
+        .status-pending   { color:#ff9900; font-weight:700; }
+        .status-confirmed { color:#00ff88; font-weight:700; }
+        .status-rejected  { color:#ff3366; font-weight:700; }
     </style>
 </head>
 <body>
-    <div class="container">
-        <h1>🎮 Crash Game Admin Panel</h1>
-        <div class="tabs">
-            <button class="tab active" onclick="showTab('users')">အသုံးပြုသူများ</button>
-            <button class="tab" onclick="showTab('transactions')">ငွေသွင်း/ထုတ်တောင်းဆိုချက်များ</button>
-        </div>
+<div class="container">
+    <h1>🎮 Crash Game — Admin Panel</h1>
+    <p class="subtitle">God Mode — Full Control</p>
 
-        <div id="usersSection" class="section active">
-            <h2>အသုံးပြုသူများ</h2>
-            <table>
-                <thead>
-                    <tr><th>ID</th><th>Username</th><th>Balance</th><th>Banned</th><th>Actions</th></tr>
-                </thead>
-                <tbody id="usersTable"></tbody>
-            </table>
-        </div>
+    <div class="stats-grid">
+        <div class="stat-card"><div class="val" id="sTotalUsers">—</div><div class="lbl">Total Users</div></div>
+        <div class="stat-card"><div class="val" id="sTotalRefs">—</div><div class="lbl">Total Refs</div></div>
+        <div class="stat-card"><div class="val" id="sBetCount">—</div><div class="lbl">Total Bets</div></div>
+        <div class="stat-card"><div class="val" id="sBetVol">—</div><div class="lbl">Bet Volume</div></div>
+        <div class="stat-card"><div class="val" id="sWon">—</div><div class="lbl">Player Won</div></div>
+        <div class="stat-card"><div class="val" id="sLost">—</div><div class="lbl">Player Lost</div></div>
+        <div class="stat-card"><div class="val" id="sDeposit">—</div><div class="lbl">Deposited</div></div>
+        <div class="stat-card"><div class="val" id="sWithdraw">—</div><div class="lbl">Withdrawn</div></div>
+        <div class="stat-card"><div class="val" id="sHouse">—</div><div class="lbl">House Bal</div></div>
+        <div class="stat-card"><div class="val" id="sRound">—</div><div class="lbl">Round #</div></div>
+    </div>
 
-        <div id="transactionsSection" class="section">
-            <h2>ငွေသွင်း/ထုတ်တောင်းဆိုချက်များ</h2>
-            <table>
-                <thead>
-                    <tr><th>User</th><th>Type</th><th>Amount</th><th>Account</th><th>Status</th><th>Actions</th></tr>
-                </thead>
-                <tbody id="transactionsTable"></tbody>
-            </table>
+    <div class="tabs">
+        <button class="tab active" onclick="showTab('users', this)">👤 Users</button>
+        <button class="tab" onclick="showTab('transactions', this)">💳 Transactions</button>
+        <button class="tab" onclick="showTab('refs', this)">🔗 Referrals</button>
+        <button class="tab" onclick="showTab('house', this)">🏠 House</button>
+        <button class="tab" onclick="showTab('broadcast', this)">📢 Broadcast</button>
+    </div>
+
+    <!-- Users -->
+    <div id="usersSection" class="section active">
+        <h2 style="margin-bottom:12px;font-size:1rem;color:#aaa;">👤 User Management</h2>
+        <input class="search-bar" id="userSearch" placeholder="🔍 ID / Username ရှာရန်..." oninput="filterUsers()">
+        <div style="overflow-x:auto;">
+        <table>
+            <thead><tr><th>Telegram ID</th><th>Username</th><th>Balance</th><th>Bets</th><th>Wins</th><th>Refs</th><th>Status</th><th>Actions</th></tr></thead>
+            <tbody id="usersTable"></tbody>
+        </table>
         </div>
     </div>
 
-    <!-- Balance Modal -->
-    <div class="modal" id="balanceModal">
-        <div class="modal-content">
-            <h3>ငွေလက်ကျန်ပြင်ရန်</h3>
-            <input type="hidden" id="balanceUserId">
-            <p>လက်ကျန်: <span id="currentBalance"></span> MMK</p>
-            <select id="balanceAction">
-                <option value="add">ထည့်မည်</option>
-                <option value="deduct">နုတ်မည်</option>
-            </select>
-            <input type="number" id="balanceAmount" placeholder="ပမာဏ">
-            <div class="modal-buttons">
-                <button class="primary" onclick="submitBalance()">အတည်ပြု</button>
-                <button onclick="closeBalanceModal()">ပိတ်မည်</button>
+    <!-- Transactions -->
+    <div id="transactionsSection" class="section">
+        <h2 style="margin-bottom:12px;font-size:1rem;color:#aaa;">💳 Deposit / Withdraw Requests</h2>
+        <div class="pill-row">
+            <button class="ghost" onclick="loadTransactions('all')">All</button>
+            <button class="warning" onclick="loadTransactions('pending')">⏳ Pending</button>
+            <button class="success" onclick="loadTransactions('confirmed')">✅ Confirmed</button>
+            <button class="danger" onclick="loadTransactions('rejected')">❌ Rejected</button>
+        </div>
+        <div style="overflow-x:auto;">
+        <table>
+            <thead><tr><th>User</th><th>Type</th><th>Amount</th><th>Account</th><th>Date</th><th>Status</th><th>Actions</th></tr></thead>
+            <tbody id="transactionsTable"></tbody>
+        </table>
+        </div>
+    </div>
+
+    <!-- Refs -->
+    <div id="refsSection" class="section">
+        <h2 style="margin-bottom:12px;font-size:1rem;color:#aaa;">🔗 Referral Management</h2>
+        <div style="overflow-x:auto;">
+        <table>
+            <thead><tr><th>Referrer ID</th><th>Referee</th><th>Bonus</th><th>Date</th><th>Actions</th></tr></thead>
+            <tbody id="refsTable"></tbody>
+        </table>
+        </div>
+    </div>
+
+    <!-- House -->
+    <div id="houseSection" class="section">
+        <h2 style="margin-bottom:12px;font-size:1rem;color:#aaa;">🏠 House Balance Control</h2>
+        <div class="house-panel">
+            <div>
+                <div class="hlbl">Current House Balance</div>
+                <div class="hval" id="houseBal">—</div>
+            </div>
+            <div style="margin-left:auto;display:flex;gap:8px;align-items:center;">
+                <input type="number" id="houseNewBal" placeholder="New amount" style="background:#0b0e17;border:1px solid #2a2f3f;border-radius:8px;padding:10px;color:#fff;width:140px;">
+                <button class="warning" onclick="setHouseBalance()">Set Balance</button>
             </div>
         </div>
+        <p style="color:#555;font-size:.78rem;">House balance ကိုလျှော့ချလိုက်ရင် crash ပိုများမည်။ တိုးမြှင့်ရင် crash ပိုနည်းမည်။</p>
     </div>
 
-    <!-- Ban Modal -->
-    <div class="modal" id="banModal">
-        <div class="modal-content">
-            <h3>အကောင့်ပိတ်ရန်</h3>
-            <input type="hidden" id="banUserId">
-            <p id="banUserDisplay"></p>
-            <input type="text" id="banReason" placeholder="အကြောင်းအရင်း (ချန်လှပ်နိုင်)">
-            <div class="modal-buttons">
-                <button class="danger" onclick="submitBan(true)">ပိတ်မည်</button>
-                <button class="primary" onclick="submitBan(false)">မပိတ်ဘဲနေ</button>
-                <button onclick="closeBanModal()">ပိတ်မည်</button>
-            </div>
+    <!-- Broadcast -->
+    <div id="broadcastSection" class="section">
+        <h2 style="margin-bottom:12px;font-size:1rem;color:#aaa;">📢 Broadcast Message</h2>
+        <div class="broadcast-box">
+            <p style="color:#aaa;font-size:.82rem;margin-bottom:10px;">HTML (&lt;b&gt;, &lt;i&gt;) tags အသုံးပြုနိုင်သည်</p>
+            <textarea id="broadcastMsg" placeholder="Message ရေးပါ..."></textarea>
+            <button class="primary" style="margin-top:10px;padding:12px 24px;font-size:.95rem;" onclick="sendBroadcast()">📤 User အားလုံးသို့ ပို့မည်</button>
+            <p id="broadcastResult" style="margin-top:10px;color:#00ff88;font-size:.85rem;"></p>
         </div>
     </div>
+</div>
 
-    <!-- Process Transaction Modal -->
-    <div class="modal" id="txModal">
-        <div class="modal-content">
-            <h3>ငွေလွှဲမှုအတည်ပြု/ငြင်း</h3>
-            <input type="hidden" id="txId">
-            <p id="txDetails"></p>
-            <select id="txStatus">
-                <option value="confirmed">အတည်ပြုမည်</option>
-                <option value="rejected">ငြင်းပယ်မည်</option>
-            </select>
-            <input type="text" id="txNote" placeholder="မှတ်ချက် (ချန်လှပ်နိုင်)">
-            <div class="modal-buttons">
-                <button class="primary" onclick="submitTx()">အတည်ပြု</button>
-                <button onclick="closeTxModal()">ပိတ်မည်</button>
-            </div>
+<!-- Balance Modal -->
+<div class="modal" id="balanceModal">
+    <div class="modal-content">
+        <h3>💰 ငွေလက်ကျန်ပြင်ရန်</h3>
+        <input type="hidden" id="balanceUserId">
+        <p style="margin-bottom:12px;color:#aaa;">လက်ကျန်: <span id="currentBalance" style="color:#00f2ff;font-weight:700;"></span> MMK</p>
+        <select id="balanceAction"><option value="add">➕ ထည့်မည်</option><option value="deduct">➖ နုတ်မည်</option></select>
+        <input type="number" id="balanceAmount" placeholder="ပမာဏ (MMK)">
+        <div class="modal-buttons">
+            <button class="primary" onclick="submitBalance()">အတည်ပြု</button>
+            <button class="ghost" onclick="closeModal('balanceModal')">ပိတ်မည်</button>
         </div>
     </div>
+</div>
 
-    <script>
-        const tg = window.Telegram.WebApp;
-        tg.expand();
-        const BACKEND_URL = 'https://crashgame-money2.onrender.com';
-        let adminId = null;
+<!-- Ban Modal -->
+<div class="modal" id="banModal">
+    <div class="modal-content">
+        <h3 id="banModalTitle">🚫 အကောင့်ပိတ်ရန်</h3>
+        <input type="hidden" id="banUserId">
+        <p id="banUserDisplay" style="margin-bottom:12px;color:#aaa;"></p>
+        <input type="text" id="banReason" placeholder="အကြောင်းအရင်း (ချန်လှပ်နိုင်)">
+        <div class="modal-buttons">
+            <button class="danger" id="banConfirmBtn" onclick="submitBan(true)">ပိတ်မည်</button>
+            <button class="success" id="unbanConfirmBtn" onclick="submitBan(false)" style="display:none;">ဖွင့်မည်</button>
+            <button class="ghost" onclick="closeModal('banModal')">မပိတ်ဘဲ</button>
+        </div>
+    </div>
+</div>
 
-        const user = tg.initDataUnsafe?.user;
-        if (user) {
-            adminId = user.id.toString();
-            loadUsers();
-            loadTransactions();
-        } else {
-            document.body.innerHTML = '<h2 style="color:red;">Telegram မှသာဝင်ရောက်ခွင့်ရှိသည်။</h2>';
-        }
+<!-- Send Message Modal -->
+<div class="modal" id="msgModal">
+    <div class="modal-content">
+        <h3>📨 User ကို စာပို့ရန်</h3>
+        <input type="hidden" id="msgUserId">
+        <p id="msgUserDisplay" style="margin-bottom:12px;color:#aaa;"></p>
+        <textarea id="msgText" placeholder="Message ရေးပါ..."></textarea>
+        <div class="modal-buttons">
+            <button class="primary" onclick="submitSendMsg()">ပို့မည်</button>
+            <button class="ghost" onclick="closeModal('msgModal')">ပိတ်မည်</button>
+        </div>
+    </div>
+</div>
 
-        function showTab(tab) {
-            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-            document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
-            if (tab === 'users') {
-                document.querySelector('.tab').classList.add('active');
-                document.getElementById('usersSection').classList.add('active');
-                loadUsers();
-            } else {
-                document.querySelectorAll('.tab')[1].classList.add('active');
-                document.getElementById('transactionsSection').classList.add('active');
-                loadTransactions();
-            }
-        }
+<!-- Transaction Modal -->
+<div class="modal" id="txModal">
+    <div class="modal-content">
+        <h3>💳 ငွေလွှဲမှု ဆောင်ရွက်ရန်</h3>
+        <input type="hidden" id="txId">
+        <p id="txDetails" style="margin-bottom:12px;color:#aaa;line-height:1.6;"></p>
+        <select id="txStatus"><option value="confirmed">✅ အတည်ပြုမည်</option><option value="rejected">❌ ငြင်းပယ်မည်</option></select>
+        <input type="text" id="txNote" placeholder="မှတ်ချက် (ချန်လှပ်နိုင်)">
+        <div class="modal-buttons">
+            <button class="primary" onclick="submitTx()">အတည်ပြု</button>
+            <button class="ghost" onclick="closeModal('txModal')">ပိတ်မည်</button>
+        </div>
+    </div>
+</div>
 
-        async function loadUsers() {
-            const res = await fetch(`${BACKEND_URL}/api/admin/users`, {
-                headers: { 'x-telegram-id': adminId }
-            });
-            const data = await res.json();
-            if (data.success) {
-                const tbody = document.getElementById('usersTable');
-                tbody.innerHTML = data.users.map(u => `
-                    <tr>
-                        <td>${u.telegramId}</td>
-                        <td>${u.username || '—'}</td>
-                        <td>${u.balance.toLocaleString()} MMK</td>
-                        <td>${u.isBanned ? '❌ ပိတ်ထား' : '✅ ဖွင့်ထား'}</td>
-                        <td>
-                            <button class="primary" onclick="openBalanceModal('${u.telegramId}', ${u.balance})">ငွေပြင်</button>
-                            <button class="${u.isBanned ? 'primary' : 'danger'}" onclick="openBanModal('${u.telegramId}', '${u.username || u.telegramId}', ${u.isBanned})">
-                                ${u.isBanned ? 'ပြန်ဖွင့်' : 'ပိတ်'}
-                            </button>
-                        </td>
-                    </tr>
-                `).join('');
-            }
-        }
+<script>
+const tg = window.Telegram.WebApp;
+tg.expand();
+const BACKEND = 'https://crashgame-money2.onrender.com';
+let adminId = null;
+let allUsers = [];
 
-        async function loadTransactions() {
-            const res = await fetch(`${BACKEND_URL}/api/admin/transactions`, {
-                headers: { 'x-telegram-id': adminId }
-            });
-            const data = await res.json();
-            if (data.success) {
-                const tbody = document.getElementById('transactionsTable');
-                tbody.innerHTML = data.transactions.map(tx => `
-                    <tr>
-                        <td>${tx.username || tx.userId}</td>
-                        <td>${tx.type === 'deposit' ? 'ငွေသွင်း' : 'ငွေထုတ်'}</td>
-                        <td>${tx.amount} MMK</td>
-                        <td>${tx.accountName} (${tx.accountNumber})</td>
-                        <td class="status-${tx.status}">${tx.status === 'pending' ? '⏳ ဆိုင်းငံ့' : tx.status === 'confirmed' ? '✅ အတည်ပြု' : '❌ ငြင်းပယ်'}</td>
-                        <td>
-                            ${tx.status === 'pending' ? `<button class="primary" onclick="openTxModal('${tx._id}', '${tx.type}', ${tx.amount}, '${tx.username}')">ဆောင်ရွက်ရန်</button>` : '—'}
-                        </td>
-                    </tr>
-                `).join('');
-            }
-        }
+const user = tg.initDataUnsafe?.user;
+if (user) {
+    adminId = user.id.toString();
+    init();
+} else {
+    document.body.innerHTML = '<h2 style="color:#ff3366;padding:20px;">Telegram မှသာဝင်ရောက်ခွင့်ရှိသည်။</h2>';
+}
 
-        function openBalanceModal(userId, currentBal) {
-            document.getElementById('balanceUserId').value = userId;
-            document.getElementById('currentBalance').innerText = currentBal;
-            document.getElementById('balanceModal').style.display = 'flex';
-        }
-        function closeBalanceModal() {
-            document.getElementById('balanceModal').style.display = 'none';
-        }
-        async function submitBalance() {
-            const userId = document.getElementById('balanceUserId').value;
-            const action = document.getElementById('balanceAction').value;
-            const amount = parseInt(document.getElementById('balanceAmount').value);
-            if (!amount || amount <= 0) { alert('ငွေပမာဏမှန်ကန်စွာထည့်ပါ။'); return; }
-            const res = await fetch(`${BACKEND_URL}/api/admin/user/balance`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json', 'x-telegram-id': adminId },
-                body: JSON.stringify({ userId, action, amount })
-            });
-            const data = await res.json();
-            if (data.success) {
-                alert('အောင်မြင်သည်။');
-                closeBalanceModal();
-                loadUsers();
-            } else {
-                alert('မအောင်မြင်: ' + data.message);
-            }
-        }
+async function init() {
+    await Promise.all([loadStats(), loadUsers(), loadTransactions('pending')]);
+}
 
-        function openBanModal(userId, display, isBanned) {
-            document.getElementById('banUserId').value = userId;
-            document.getElementById('banUserDisplay').innerText = display + (isBanned ? ' (ပိတ်ထားဆဲ)' : '');
-            document.getElementById('banModal').style.display = 'flex';
-        }
-        function closeBanModal() {
-            document.getElementById('banModal').style.display = 'none';
-        }
-        async function submitBan(ban) {
-            const userId = document.getElementById('banUserId').value;
-            const reason = document.getElementById('banReason').value;
-            const res = await fetch(`${BACKEND_URL}/api/admin/user/ban`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json', 'x-telegram-id': adminId },
-                body: JSON.stringify({ userId, ban, reason })
-            });
-            const data = await res.json();
-            if (data.success) {
-                alert('အောင်မြင်သည်။');
-                closeBanModal();
-                loadUsers();
-            } else {
-                alert('မအောင်မြင်: ' + data.message);
-            }
-        }
+async function loadStats() {
+    const r = await api('GET', '/api/admin/stats');
+    if (!r.success) return;
+    const fmt = n => Number(n||0).toLocaleString();
+    document.getElementById('sTotalUsers').textContent = fmt(r.totalUsers);
+    document.getElementById('sTotalRefs').textContent  = fmt(r.totalRefs);
+    document.getElementById('sBetCount').textContent   = fmt(r.bets.count);
+    document.getElementById('sBetVol').textContent     = fmt(r.bets.volume);
+    document.getElementById('sWon').textContent        = fmt(r.bets.won);
+    document.getElementById('sLost').textContent       = fmt(r.bets.lost);
+    document.getElementById('sDeposit').textContent    = fmt(r.transactions.deposited);
+    document.getElementById('sWithdraw').textContent   = fmt(r.transactions.withdrawn);
+    document.getElementById('sHouse').textContent      = fmt(r.houseBalance);
+    document.getElementById('sRound').textContent      = fmt(r.round);
+    document.getElementById('houseBal').textContent    = fmt(r.houseBalance) + ' MMK';
+}
 
-        function openTxModal(txId, type, amount, username) {
-            document.getElementById('txId').value = txId;
-            document.getElementById('txDetails').innerText = `${type === 'deposit' ? 'ငွေသွင်း' : 'ငွေထုတ်'} - ${amount} MMK (${username})`;
-            document.getElementById('txModal').style.display = 'flex';
-        }
-        function closeTxModal() {
-            document.getElementById('txModal').style.display = 'none';
-        }
-        async function submitTx() {
-            const txId = document.getElementById('txId').value;
-            const status = document.getElementById('txStatus').value;
-            const note = document.getElementById('txNote').value;
-            const res = await fetch(`${BACKEND_URL}/api/admin/transaction/process`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json', 'x-telegram-id': adminId },
-                body: JSON.stringify({ transactionId: txId, status, adminNote: note })
-            });
-            const data = await res.json();
-            if (data.success) {
-                alert('အောင်မြင်သည်။');
-                closeTxModal();
-                loadTransactions();
-            } else {
-                alert('မအောင်မြင်: ' + data.message);
-            }
-        }
-    </script>
+async function loadUsers() {
+    const r = await api('GET', '/api/admin/users');
+    if (!r.success) return;
+    allUsers = r.users;
+    renderUsers(allUsers);
+}
+
+function renderUsers(users) {
+    document.getElementById('usersTable').innerHTML = users.map(u => `
+        <tr>
+            <td style="font-size:.75rem;color:#666;">${u.telegramId}</td>
+            <td><b style="color:#fff;">${u.username || '—'}</b></td>
+            <td><span style="color:#00f2ff;font-weight:700;">${(u.balance||0).toLocaleString()}</span> MMK</td>
+            <td>${u.totalBets||0}</td><td>${u.totalWins||0}</td>
+            <td style="color:#ffd700;">${u.referralCount||0}</td>
+            <td>${u.isBanned ? '<span class="badge bad">ပိတ်</span>' : '<span class="badge ok">ဖွင့်</span>'}</td>
+            <td style="display:flex;gap:4px;flex-wrap:wrap;">
+                <button class="primary" onclick="openBalanceModal('${u.telegramId}',${u.balance||0})">💰</button>
+                <button class="${u.isBanned ? 'success' : 'danger'}" onclick="openBanModal('${u.telegramId}','${(u.username||u.telegramId).replace(/'/g,"\\'")}',${u.isBanned})">${u.isBanned ? '🔓' : '🔒'}</button>
+                <button class="ghost" onclick="openMsgModal('${u.telegramId}','${(u.username||u.telegramId).replace(/'/g,"\\'")}')">📨</button>
+            </td>
+        </tr>
+    `).join('');
+}
+
+function filterUsers() {
+    const q = document.getElementById('userSearch').value.toLowerCase();
+    renderUsers(allUsers.filter(u => (u.telegramId||'').includes(q) || (u.username||'').toLowerCase().includes(q)));
+}
+
+async function loadTransactions(filter = 'all') {
+    const r = await api('GET', '/api/admin/transactions');
+    if (!r.success) return;
+    let txs = filter === 'all' ? r.transactions : r.transactions.filter(t => t.status === filter);
+    document.getElementById('transactionsTable').innerHTML = txs.map(tx => `
+        <tr>
+            <td>${tx.username || tx.userId}</td>
+            <td>${tx.type === 'deposit' ? '<span class="badge ok">သွင်း</span>' : '<span class="badge warn">ထုတ်</span>'}</td>
+            <td><b>${(tx.amount||0).toLocaleString()} MMK</b></td>
+            <td style="font-size:.78rem;">${tx.accountName}<br><span style="color:#555;">${tx.accountNumber}</span></td>
+            <td style="font-size:.75rem;color:#555;">${new Date(tx.createdAt).toLocaleDateString()}</td>
+            <td class="status-${tx.status}">${tx.status === 'pending' ? '⏳' : tx.status === 'confirmed' ? '✅' : '❌'} ${tx.status}</td>
+            <td>${tx.status === 'pending' ? `<button class="primary" onclick="openTxModal('${tx._id}','${tx.type}',${tx.amount},'${tx.username||tx.userId}')">ဆောင်ရွက်</button>` : '<span style="color:#333;font-size:.75rem;">—</span>'}</td>
+        </tr>
+    `).join('');
+}
+
+async function loadRefs() {
+    const r = await api('GET', '/api/admin/refs');
+    if (!r.success) return;
+    document.getElementById('refsTable').innerHTML = r.refs.map(ref => `
+        <tr>
+            <td style="font-size:.78rem;">${ref.referrerId}</td>
+            <td>${ref.refereeUsername || ref.refereeId}</td>
+            <td><span style="color:#ffd700;font-weight:700;">${ref.bonusPaid} MMK</span></td>
+            <td style="font-size:.75rem;color:#555;">${new Date(ref.createdAt).toLocaleDateString()}</td>
+            <td style="display:flex;gap:4px;">
+                <button class="danger" onclick="deleteRef('${ref._id}',false)">🗑️ ဖျက်</button>
+                <button class="warning" onclick="deleteRef('${ref._id}',true)">↩️ Clawback</button>
+            </td>
+        </tr>
+    `).join('');
+}
+
+async function deleteRef(refId, clawback) {
+    if (!confirm(clawback ? 'Ref ဖျက်ပြီး Bonus ပြန်နုတ်မည်လား?' : 'Ref ဖျက်မည်လား?')) return;
+    const r = await api('POST', '/api/admin/ref/delete', { refId, clawback });
+    alert(r.success ? 'အောင်မြင်သည်' : 'မအောင်မြင်: ' + r.message);
+    if (r.success) loadRefs();
+}
+
+async function setHouseBalance() {
+    const amt = parseInt(document.getElementById('houseNewBal').value);
+    if (!amt || amt < 0) { alert('ပမာဏ မမှန်ကန်'); return; }
+    const r = await api('POST', '/api/admin/house/balance', { amount: amt });
+    if (r.success) { document.getElementById('houseBal').textContent = amt.toLocaleString() + ' MMK'; alert('အောင်မြင်သည်'); loadStats(); }
+    else alert('မအောင်မြင်');
+}
+
+async function sendBroadcast() {
+    const msg = document.getElementById('broadcastMsg').value.trim();
+    if (!msg) { alert('Message ထည့်ပါ'); return; }
+    if (!confirm('User အားလုံးသို့ Message ပို့မည်လား?')) return;
+    const el = document.getElementById('broadcastResult');
+    el.textContent = '⏳ ပို့နေသည်...';
+    const r = await api('POST', '/api/admin/broadcast', { message: msg });
+    el.textContent = r.success ? `✅ ${r.sent} ဦးသို့ပေးပို့ပြီး | ❌ ${r.failed} ဦး မပြီးဆုံး` : '❌ မအောင်မြင်';
+}
+
+function openBalanceModal(userId, bal) {
+    document.getElementById('balanceUserId').value = userId;
+    document.getElementById('currentBalance').textContent = Number(bal).toLocaleString();
+    openModal('balanceModal');
+}
+async function submitBalance() {
+    const userId = document.getElementById('balanceUserId').value;
+    const action = document.getElementById('balanceAction').value;
+    const amount = parseInt(document.getElementById('balanceAmount').value);
+    if (!amount || amount <= 0) { alert('ပမာဏ မမှန်ကန်'); return; }
+    const r = await api('POST', '/api/admin/user/balance', { userId, action, amount });
+    if (r.success) { alert('အောင်မြင်သည်'); closeModal('balanceModal'); loadUsers(); loadStats(); }
+    else alert('မအောင်မြင်: ' + r.message);
+}
+
+function openBanModal(userId, display, isBanned) {
+    document.getElementById('banUserId').value = userId;
+    document.getElementById('banUserDisplay').textContent = display + (isBanned ? ' (ပိတ်ထားဆဲ)' : '');
+    document.getElementById('banModalTitle').textContent  = isBanned ? '🔓 Account ပြန်ဖွင့်ရန်' : '🚫 Account ပိတ်ရန်';
+    document.getElementById('banConfirmBtn').style.display   = isBanned ? 'none' : '';
+    document.getElementById('unbanConfirmBtn').style.display = isBanned ? '' : 'none';
+    openModal('banModal');
+}
+async function submitBan(ban) {
+    const userId = document.getElementById('banUserId').value;
+    const reason = document.getElementById('banReason').value;
+    const r = await api('POST', '/api/admin/user/ban', { userId, ban, reason });
+    if (r.success) { alert('အောင်မြင်သည်'); closeModal('banModal'); loadUsers(); }
+    else alert('မအောင်မြင်: ' + r.message);
+}
+
+function openMsgModal(userId, display) {
+    document.getElementById('msgUserId').value = userId;
+    document.getElementById('msgUserDisplay').textContent = display;
+    openModal('msgModal');
+}
+async function submitSendMsg() {
+    const userId = document.getElementById('msgUserId').value;
+    const text   = document.getElementById('msgText').value.trim();
+    if (!text) { alert('Message ထည့်ပါ'); return; }
+    const r = await api('POST', '/api/admin/send-message', { userId, message: text });
+    alert(r.success ? 'ပို့ပြီးပါပြီ' : 'မအောင်မြင်: ' + (r.message||''));
+    if (r.success) closeModal('msgModal');
+}
+
+function openTxModal(txId, type, amount, username) {
+    document.getElementById('txId').value = txId;
+    document.getElementById('txDetails').innerHTML =
+        `${type === 'deposit' ? '💰 ငွေသွင်း' : '💸 ငွေထုတ်'}<br>` +
+        `ပမာဏ: <b style="color:#00f2ff;">${Number(amount).toLocaleString()} MMK</b><br>User: ${username}`;
+    openModal('txModal');
+}
+async function submitTx() {
+    const txId   = document.getElementById('txId').value;
+    const status = document.getElementById('txStatus').value;
+    const note   = document.getElementById('txNote').value;
+    const r = await api('POST', '/api/admin/transaction/process', { transactionId: txId, status, adminNote: note });
+    if (r.success) { alert('အောင်မြင်သည်'); closeModal('txModal'); loadTransactions('pending'); loadStats(); }
+    else alert('မအောင်မြင်: ' + r.message);
+}
+
+function openModal(id) { document.getElementById(id).classList.add('open'); }
+function closeModal(id) {
+    document.getElementById(id).classList.remove('open');
+    document.querySelectorAll(`#${id} input,#${id} textarea`).forEach(i => { if (i.type !== 'hidden') i.value = ''; });
+}
+
+function showTab(tab, el) {
+    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+    const map = { users:'usersSection', transactions:'transactionsSection', refs:'refsSection', house:'houseSection', broadcast:'broadcastSection' };
+    document.getElementById(map[tab]).classList.add('active');
+    el.classList.add('active');
+    if (tab === 'refs') loadRefs();
+    if (tab === 'house') loadStats();
+}
+
+async function api(method, path, body) {
+    try {
+        const opts = { method, headers: { 'Content-Type': 'application/json', 'x-telegram-id': adminId } };
+        if (body) opts.body = JSON.stringify(body);
+        const r = await fetch(BACKEND + path, opts);
+        return await r.json();
+    } catch { return { success: false, message: 'Network error' }; }
+}
+</script>
 </body>
 </html>
